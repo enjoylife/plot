@@ -238,6 +238,7 @@ export {default as vectorFrame} from "./vector-frame.js";
 export {default as wealthBritainBar} from "./wealth-britain-bar.js";
 export {default as wealthBritainProportionPlot} from "./wealth-britain-proportion-plot.js";
 export {default as wordCloud} from "./word-cloud.js";
+export {default as wordCloudCrazy} from "./word-cloud-crazy.js";
 export {default as wordLengthMobyDick} from "./word-length-moby-dick.js";
 export {default as yearlyRequests} from "./yearly-requests.js";
 export {default as yearlyRequestsDot} from "./yearly-requests-dot.js";
