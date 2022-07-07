@@ -31,9 +31,9 @@ export function valueObject(channels, scales) {
     const scale = scales[scaleName];
     values[channelName] = scale === undefined ? value : map(value, scale);
     if ("dx" in channels && ["x", "x1", "x2"].includes(channelName)) {
-      values[channelName] = map(values[channelName], (d, i) => d + channels.dx.value[i]);
+      values[channelName] = map(values[channelName], (d, i) => d + (+channels.dx.value[i] || 0));
     } else if ("dy" in channels && ["y", "y1", "y2"].includes(channelName)) {
-      values[channelName] = map(values[channelName], (d, i) => d + channels.dy.value[i]);
+      values[channelName] = map(values[channelName], (d, i) => d + (+channels.dy.value[i] || 0));
     }
   }
   return values;
