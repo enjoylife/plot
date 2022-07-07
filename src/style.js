@@ -356,9 +356,10 @@ export function applyFrameAnchor({frameAnchor}, {width, height, marginTop, margi
   ];
 }
 
-// A constant stroke-dasharray can be specified as an array of numbers
-// or as a string joining numbers with white space or comma
+// A constant stroke-dasharray can be specified as a number, an array of numbers
+// or as a string joining numbers with white space or comma; any other non-null
+// value is considered as a channel.
 function maybeDasharrayChannel(value) {
   if (value == null) return [undefined, "none"];
-  return (typeof value === "string" && value.match(/^([\d.]+(\s+|,)){1,}[\d.]+$/) || Array.isArray(value) && typeof value[0] === "number") ? [undefined, `${value}`] : [value, undefined];
+  return (typeof value === "string" && value.match(/^([\d.]+(\s+|,)){1,}[\d.]+$/) || typeof value === "number" || Array.isArray(value) && typeof value[0] === "number") ? [undefined, `${value}`] : [value, undefined];
 }
