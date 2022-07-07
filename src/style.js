@@ -31,7 +31,9 @@ export function styles(
     mixBlendMode,
     paintOrder,
     pointerEvents,
-    shapeRendering
+    shapeRendering,
+    dx,
+    dy
   },
   {
     ariaLabel: cariaLabel,
@@ -127,6 +129,11 @@ export function styles(
   mark.pointerEvents = impliedString(pointerEvents, "auto");
   mark.shapeRendering = impliedString(shapeRendering, "auto");
 
+  const [vdx, cdx] = maybeNumberChannel(dx);
+  const [vdy, cdy] = maybeNumberChannel(dy);
+  mark.dx = cdx || 0;
+  mark.dy = cdy || 0;
+
   return [
     {name: "title", value: title, optional: true},
     {name: "href", value: href, optional: true},
@@ -138,7 +145,9 @@ export function styles(
     {name: "strokeDashoffset", value: vstrokeDashoffset, optional: true},
     {name: "strokeOpacity", value: vstrokeOpacity, scale: "opacity", optional: true},
     {name: "strokeWidth", value: vstrokeWidth, optional: true},
-    {name: "opacity", value: vopacity, scale: "opacity", optional: true}
+    {name: "opacity", value: vopacity, scale: "opacity", optional: true},
+    {name: "dx", value: vdx, optional: true, filter: null},
+    {name: "dy", value: vdy, optional: true, filter: null}
   ];
 }
 

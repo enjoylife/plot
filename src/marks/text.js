@@ -2,7 +2,7 @@ import {namespaces} from "d3";
 import {create} from "../context.js";
 import {nonempty} from "../defined.js";
 import {formatDefault} from "../format.js";
-import {indexOf, identity, string, maybeNumberChannel, maybeTuple, numberChannel, isNumeric, isTemporal, keyword, maybeFrameAnchor, isTextual, isIterable} from "../options.js";
+import {indexOf, identity, string, maybeNumberChannel, maybeTuple, numberChannel, isNumeric, isTemporal, keyword, maybeFrameAnchor, isTextual, isIterable, labelof, valueof} from "../options.js";
 import {Mark} from "../plot.js";
 import {applyChannelStyles, applyDirectStyles, applyIndirectStyles, applyAttr, applyTransform, impliedString, applyFrameAnchor} from "../style.js";
 import {maybeIntervalMidX, maybeIntervalMidY} from "../transforms/interval.js";
@@ -34,7 +34,10 @@ export class Text extends Mark {
       rotate
     } = options;
     const [vrotate, crotate] = maybeNumberChannel(rotate, 0);
+    const [vtextAnchor, ctextAnchor] = maybeTextAnchorChannel(textAnchor);
+//    const [vfontFamily, cfontFamily] = maybeFontChannel(fontFamily);
     const [vfontSize, cfontSize] = maybeFontSizeChannel(fontSize);
+//    const [vfontStyle, cfontStyle] = maybeFontChannel(fontStyle);
     super(
       data,
       [
@@ -42,13 +45,14 @@ export class Text extends Mark {
         {name: "y", value: y, scale: "y", optional: true},
         {name: "fontSize", value: vfontSize, optional: true},
         {name: "rotate", value: numberChannel(vrotate), optional: true},
-        {name: "text", value: text, filter: nonempty}
+        {name: "text", value: text, filter: nonempty},
+        {name: "textAnchor", value: keywordChannel(vtextAnchor, ["start", "end"]), optional: true, filter: null}
       ],
       options,
       defaults
     );
     this.rotate = crotate;
-    this.textAnchor = impliedString(textAnchor, "middle");
+    this.textAnchor = ctextAnchor;
     this.lineAnchor = keyword(lineAnchor, "lineAnchor", ["top", "middle", "bottom"]);
     this.lineHeight = +lineHeight;
     this.lineWidth = +lineWidth;
@@ -61,7 +65,7 @@ export class Text extends Mark {
     this.frameAnchor = maybeFrameAnchor(frameAnchor);
   }
   render(index, scales, channels, dimensions, context) {
-    const {x: X, y: Y, rotate: R, text: T, fontSize: FS} = channels;
+    const {x: X, y: Y, rotate: R, text: T, fontSize: FS, textAnchor: TA} = channels;
     const {rotate} = this;
     const [cx, cy] = applyFrameAnchor(this, dimensions);
     return create("svg:g", context)
@@ -87,6 +91,7 @@ export class Text extends Mark {
                 : Y ? i => `translate(${cx},${Y[i]})`
                 : `translate(${cx},${cy})`))
             .call(applyAttr, "font-size", FS && (i => FS[i]))
+            .call(applyAttr, "text-anchor", TA && (i => TA[i]))
             .call(applyChannelStyles, this, channels))
       .node();
   }
@@ -174,6 +179,18 @@ function maybeFontSizeChannel(fontSize) {
   return fontSizes.has(fontSize) || /^[+-]?\d*\.?\d+(e[+-]?\d+)?(\w*|%)$/.test(fontSize)
     ? [undefined, fontSize]
     : [fontSize, undefined];
+}
+
+function maybeTextAnchorChannel(textAnchor) {
+  if (textAnchor == null || ["middle", "start", "end"].includes(textAnchor)) return [undefined, impliedString(textAnchor, "middle")];
+  return [textAnchor, undefined];
+}
+
+function keywordChannel(value, words) {
+  return value == null ? null : {
+    transform: data => valueof(data, value).map(d => words.includes(d = `${d}`) ? d : null),
+    label: labelof(value)
+  };
 }
 
 // This is a greedy algorithm for line wrapping. It would be better to use the

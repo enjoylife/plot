@@ -257,7 +257,7 @@ export function plot(options = {}) {
 
 export class Mark {
   constructor(data, channels = [], options = {}, defaults) {
-    const {facet = "auto", sort, dx, dy, clip, channels: extraChannels} = options;
+    const {facet = "auto", sort, clip, channels: extraChannels} = options;
     const names = new Set();
     this.data = data;
     this.sort = isDomainSort(sort) ? sort : null;
@@ -279,8 +279,6 @@ export class Mark {
       names.add(key);
       return true;
     });
-    this.dx = +dx || 0;
-    this.dy = +dy || 0;
     this.clip = maybeClip(clip);
   }
   initialize(facets, facetChannels) {
