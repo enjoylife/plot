@@ -1,13 +1,14 @@
-import {area as shapeArea, create} from "d3";
+import {area as shapeArea} from "d3";
+import {create} from "../context.js";
 import {Curve} from "../curve.js";
+import {first, indexOf, maybeZ, second} from "../options.js";
 import {Mark} from "../plot.js";
-import {indexOf, maybeZ} from "../options.js";
 import {applyDirectStyles, applyIndirectStyles, applyTransform, applyGroupedChannelStyles, groupIndex} from "../style.js";
+import {maybeDenseIntervalX, maybeDenseIntervalY} from "../transforms/bin.js";
 import {maybeIdentityX, maybeIdentityY} from "../transforms/identity.js";
 import {maybeStackX, maybeStackY} from "../transforms/stack.js";
 
 const defaults = {
-  filter: null,
   ariaLabel: "area",
   strokeWidth: 1,
   strokeLinecap: "round",
@@ -33,15 +34,18 @@ export class Area extends Mark {
     this.z = z;
     this.curve = Curve(curve, tension);
   }
-  render(I, {x, y}, channels, dimensions) {
+  filter(index) {
+    return index;
+  }
+  render(index, scales, channels, dimensions, context) {
     const {x1: X1, y1: Y1, x2: X2 = X1, y2: Y2 = Y1} = channels;
-    const {dx, dy} = this;
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, x, y, dx, dy)
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, scales, 0, 0)
         .call(g => g.selectAll()
-          .data(groupIndex(I, [X1, Y1, X2, Y2], this, channels))
-          .join("path")
+          .data(groupIndex(index, [X1, Y1, X2, Y2], this, channels))
+          .enter()
+          .append("path")
             .call(applyDirectStyles, this)
             .call(applyGroupedChannelStyles, this, channels)
             .attr("d", shapeArea()
@@ -56,13 +60,16 @@ export class Area extends Mark {
 }
 
 export function area(data, options) {
+  if (options === undefined) return areaY(data, {x: first, y: second});
   return new Area(data, options);
 }
 
-export function areaX(data, {y = indexOf, ...options} = {}) {
-  return new Area(data, maybeStackX(maybeIdentityX({...options, y1: y, y2: undefined})));
+export function areaX(data, options) {
+  const {y = indexOf, ...rest} = maybeDenseIntervalY(options);
+  return new Area(data, maybeStackX(maybeIdentityX({...rest, y1: y, y2: undefined})));
 }
 
-export function areaY(data, {x = indexOf, ...options} = {}) {
-  return new Area(data, maybeStackY(maybeIdentityY({...options, x1: x, x2: undefined})));
+export function areaY(data, options) {
+  const {x = indexOf, ...rest} = maybeDenseIntervalX(options);
+  return new Area(data, maybeStackY(maybeIdentityY({...rest, x1: x, x2: undefined})));
 }

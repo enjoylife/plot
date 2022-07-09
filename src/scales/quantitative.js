@@ -1,5 +1,5 @@
 import {
-  ascending,
+  descending,
   extent,
   interpolateHcl,
   interpolateHsl,
@@ -20,11 +20,13 @@ import {
   scaleQuantile,
   scaleSymlog,
   scaleThreshold,
-  scaleIdentity
+  scaleIdentity,
+  ticks
 } from "d3";
 import {positive, negative, finite} from "../defined.js";
-import {constant, order} from "../options.js";
+import {arrayify, constant, order, slice} from "../options.js";
 import {ordinalRange, quantitativeScheme} from "./schemes.js";
+import {maybeInterval} from "../transforms/interval.js";
 import {registry, radius, opacity, color, length} from "./index.js";
 
 export const flip = i => t => i(1 - t);
@@ -52,14 +54,16 @@ export function ScaleQ(key, scale, channels, {
   nice,
   clamp,
   zero,
-  domain = (registry.get(key) === radius || registry.get(key) === opacity || registry.get(key) === length ? inferZeroDomain : inferDomain)(channels),
+  domain = inferAutoDomain(key, channels),
   unknown,
   round,
   scheme,
+  interval,
   range = registry.get(key) === radius ? inferRadialRange(channels, domain) : registry.get(key) === length ? inferLengthRange(channels, domain) : registry.get(key) === opacity ? unit : undefined,
   interpolate = registry.get(key) === color ? (scheme == null && range !== undefined ? interpolateRgb : quantitativeScheme(scheme !== undefined ? scheme : type === "cyclical" ? "rainbow" : "turbo")) : round ? interpolateRound : interpolateNumber,
   reverse
 }) {
+  interval = maybeInterval(interval);
   if (type === "cyclical" || type === "sequential") type = "linear"; // shorthand for color schemes
   reverse = !!reverse;
 
@@ -93,9 +97,9 @@ export function ScaleQ(key, scale, channels, {
   if (zero) {
     const [min, max] = extent(domain);
     if ((min > 0) || (max < 0)) {
-      domain = Array.from(domain);
-      if (order(domain) < 0) domain[domain.length - 1] = 0;
-      else domain[0] = 0;
+      domain = slice(domain);
+      if (order(domain) !== Math.sign(min)) domain[domain.length - 1] = 0; // [2, 1] or [-2, -1]
+      else domain[0] = 0; // [1, 2] or [-1, -2]
     }
   }
 
@@ -104,7 +108,7 @@ export function ScaleQ(key, scale, channels, {
   if (nice) scale.nice(nice === true ? undefined : nice), domain = scale.domain();
   if (range !== undefined) scale.range(range);
   if (clamp) scale.clamp(clamp);
-  return {type, domain, range, scale, interpolate};
+  return {type, domain, range, scale, interpolate, interval};
 }
 
 export function ScaleLinear(key, channels, options) {
@@ -123,23 +127,49 @@ export function ScaleLog(key, channels, {base = 10, domain = inferLogDomain(chan
   return ScaleQ(key, scaleLog().base(base), channels, {...options, domain});
 }
 
+export function ScaleSymlog(key, channels, {constant = 1, ...options}) {
+  return ScaleQ(key, scaleSymlog().constant(constant), channels, options);
+}
+
 export function ScaleQuantile(key, channels, {
-  quantiles = 5,
+  range,
+  quantiles = range === undefined ? 5 : (range = [...range]).length, // deprecated; use n instead
+  n = quantiles,
   scheme = "rdylbu",
   domain = inferQuantileDomain(channels),
   interpolate,
-  range = interpolate !== undefined ? quantize(interpolate, quantiles) : registry.get(key) === color ? ordinalRange(scheme, quantiles) : undefined,
   reverse
 }) {
+  if (range === undefined) range = interpolate !== undefined ? quantize(interpolate, n) : registry.get(key) === color ? ordinalRange(scheme, n) : undefined;
   return ScaleThreshold(key, channels, {
-    domain: scaleQuantile(domain, range === undefined ? {length: quantiles} : range).quantiles(),
+    domain: scaleQuantile(domain, range === undefined ? {length: n} : range).quantiles(),
     range,
     reverse
   });
 }
 
-export function ScaleSymlog(key, channels, {constant = 1, ...options}) {
-  return ScaleQ(key, scaleSymlog().constant(constant), channels, options);
+export function ScaleQuantize(key, channels, {
+  range,
+  n = range === undefined ? 5 : (range = [...range]).length,
+  scheme = "rdylbu",
+  domain = inferAutoDomain(key, channels),
+  interpolate,
+  reverse
+}) {
+  const [min, max] = extent(domain);
+  let thresholds;
+  if (range === undefined) {
+    thresholds = ticks(min, max, n); // approximate number of nice, round thresholds
+    if (thresholds[0] <= min) thresholds.splice(0, 1); // drop exact lower bound
+    if (thresholds[thresholds.length - 1] >= max) thresholds.pop(); // drop exact upper bound
+    n = thresholds.length + 1;
+    range = interpolate !== undefined ? quantize(interpolate, n) : registry.get(key) === color ? ordinalRange(scheme, n) : undefined;
+  } else {
+    thresholds = quantize(interpolateNumber(min, max), n + 1).slice(1, -1); // exactly n - 1 thresholds to match range
+    if (min instanceof Date) thresholds = thresholds.map(x => new Date(x)); // preserve date types
+  }
+  if (order(arrayify(domain)) < 0) thresholds.reverse(); // preserve descending domain
+  return ScaleThreshold(key, channels, {domain: thresholds, range, reverse});
 }
 
 export function ScaleThreshold(key, channels, {
@@ -150,9 +180,20 @@ export function ScaleThreshold(key, channels, {
   range = interpolate !== undefined ? quantize(interpolate, domain.length + 1) : registry.get(key) === color ? ordinalRange(scheme, domain.length + 1) : undefined,
   reverse
 }) {
-  if (!pairs(domain).every(([a, b]) => ascending(a, b) <= 0)) throw new Error("non-ascending domain");
+  const sign = order(arrayify(domain)); // preserve descending domain
+  if (!pairs(domain).every(([a, b]) => isOrdered(a, b, sign))) throw new Error(`the ${key} scale has a non-monotonic domain`);
   if (reverse) range = reverseof(range); // domain ascending, so reverse range
-  return {type: "threshold", scale: scaleThreshold(domain, range === undefined ? [] : range).unknown(unknown), domain, range};
+  return {
+    type: "threshold",
+    scale: scaleThreshold(sign < 0 ? reverseof(domain) : domain, range === undefined ? [] : range).unknown(unknown),
+    domain,
+    range
+  };
+}
+
+function isOrdered(a, b, sign) {
+  const s = descending(a, b);
+  return s === 0 || s === sign;
 }
 
 export function ScaleIdentity() {
@@ -166,14 +207,21 @@ export function inferDomain(channels, f = finite) {
   ] : [0, 1];
 }
 
+function inferAutoDomain(key, channels) {
+  const type = registry.get(key);
+  return (type === radius || type === opacity || type === length ? inferZeroDomain : inferDomain)(channels);
+}
+
 function inferZeroDomain(channels) {
   return [0, channels.length ? max(channels, ({value}) => value === undefined ? value : max(value, finite)) : 1];
 }
 
 // We don’t want the upper bound of the radial domain to be zero, as this would
-// be degenerate, so we ignore nonpositive values. We also don’t want the maximum
-// default radius to exceed 30px.
+// be degenerate, so we ignore nonpositive values. We also don’t want the
+// maximum default radius to exceed 30px.
 function inferRadialRange(channels, domain) {
+  const hint = channels.find(({radius}) => radius !== undefined);
+  if (hint !== undefined) return [0, hint.radius]; // a natural maximum radius, e.g. hexbins
   const h25 = quantile(channels, 0.5, ({value}) => value === undefined ? NaN : quantile(value, 0.25, positive));
   const range = domain.map(d => 3 * Math.sqrt(d / h25));
   const k = 30 / max(range);

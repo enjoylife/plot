@@ -1,7 +1,9 @@
-import {brush as brusher, brushX as brusherX, brushY as brusherY, create, select} from "d3";
+import {brush as brusher, brushX as brusherX, brushY as brusherY, select} from "d3";
+import {create} from "../context.js";
+
 import {identity, maybeTuple} from "../options.js";
 import {Mark} from "../plot.js";
-import {selection, selectionEquals} from "../selection.js";
+import {selectionKey, selectionEquals} from "../selection.js";
 import {applyDirectStyles, applyIndirectStyles} from "../style.js";
 
 const defaults = {
@@ -24,23 +26,24 @@ export class Brush extends Mark {
     );
     this.activeElement = null;
   }
-  render(index, {x, y}, {x: X, y: Y}, dimensions) {
+  render(index, {x, y}, {x: X, y: Y}, dimensions, context) {
     const {ariaLabel, ariaDescription, ariaHidden, ...options} = this;
     const {marginLeft, width, marginRight, marginTop, height, marginBottom} = dimensions;
     const brush = this;
-    const g = create("svg:g")
+    const g = create("svg:g", context)
         .call(applyIndirectStyles, {ariaLabel, ariaDescription, ariaHidden}, dimensions)
         .call((X && Y ? brusher : X ? brusherX : brusherY)()
           .extent([[marginLeft, marginTop], [width - marginRight, height - marginBottom]])
           .on("start brush end", function(event) {
             const {type, selection: extent} = event;
-            // For faceting, when starting a brush in a new facet, clear the
+
+              // For faceting, when starting a brush in a new facet, clear the
             // brush and selection on the old facet. In the future, we might
             // allow independent brushes across facets by disabling this?
             if (type === "start" && brush.activeElement !== this) {
               if (brush.activeElement !== null) {
                 select(brush.activeElement).call(event.target.clear, event);
-                brush.activeElement[selection] = null;
+                brush.activeElement[selectionKey] = null;
               }
               brush.activeElement = this;
             }
@@ -58,8 +61,8 @@ export class Brush extends Mark {
                 S = S.filter(i => y0 <= Y[i] && Y[i] <= y1);
               }
             }
-            if (!selectionEquals(this[selection], S)) {
-              this[selection] = S;
+            if (!selectionEquals(this[selectionKey], S)) {
+              this[selectionKey] = S;
               this.dispatchEvent(new Event("input", {bubbles: true}));
             }
           }))
@@ -68,7 +71,7 @@ export class Brush extends Mark {
           .call(applyIndirectStyles, options, dimensions)
           .call(applyDirectStyles, options))
       .node();
-    g[selection] = null;
+    g[selectionKey] = null;
     return g;
   }
 }

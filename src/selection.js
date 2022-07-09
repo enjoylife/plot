@@ -3,7 +3,7 @@
 // value may be an array of numbers (e.g., [0, 1, 2, …]) representing an
 // in-order subset of the rendered index, or null if the selection is undefined.
 // The selection can be updated during interaction by emitting an input event.
-export const selection = Symbol("selection");
+export const selectionKey = Symbol("selectionKey");
 
 // Given two (possibly null, possibly an index, but not undefined) selections,
 // returns true if the two represent the same selection, and false otherwise.

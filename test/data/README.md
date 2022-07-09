@@ -43,9 +43,21 @@ https://github.com/hemanrobinson/preattentive/blob/a58dd4795d0ee063a38a2d7bf3381
 ggplot2 “diamonds” dataset (carat and price columns only)
 https://github.com/tidyverse/ggplot2/blob/master/data-raw/diamonds.csv
 
+## driving.csv
+Based on Hannah Fairfield’s Driving Shifts Into Reverse
+https://archive.nytimes.com/www.nytimes.com/imagepages/2010/05/02/business/02metrics.html
+
+## download.csv
+Daily downloads of the npm “@observablehq/cars” package
+https://observablehq.com/@mbostock/npm-daily-downloads?name=@observablehq/cars
+
 ## energy-production.csv
 U.S. Energy Information Administration; monthly energy review, primary energy production by source, Jan. 2022
 https://www.eia.gov/totalenergy/data/monthly/index.php
+
+## flare.csv
+Flare visualization toolkit package hierarchy
+https://observablehq.com/@d3/treemap
 
 ## gistemp.csv
 NASA Goddard Institute for Space Studies
@@ -58,6 +70,10 @@ https://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/series_format.html
 ## metros.csv
 The New York Times
 https://www.nytimes.com/2019/12/02/upshot/wealth-poverty-divide-american-cities.html
+
+## mtcars.csv
+1974 *Motor Trend* US magazine
+https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/mtcars
 
 ## moby-dick-chapter-1.txt
 *Moby Dick; or The Whale* by Herman Melville
@@ -89,6 +105,10 @@ https://www.ncdc.noaa.gov/
 ## simpsons.csv
 IMDb/Todd W. Schneider
 https://data.world/data-society/the-simpsons-by-the-data
+
+## survey.csv
+Eitan Lees
+https://talk.observablehq.com/t/diverging-stacked-bar-chart-in-plot/6028
 
 ## traffic.csv
 Moritz Klack

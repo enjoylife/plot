@@ -1,7 +1,8 @@
-import {create} from "d3";
+import {create} from "../context.js";
 import {radians} from "../math.js";
+import {constant} from "../options.js";
 import {Mark} from "../plot.js";
-import {applyChannelStyles, applyDirectStyles, applyIndirectStyles, applyTransform, offset} from "../style.js";
+import {applyChannelStyles, applyDirectStyles, applyIndirectStyles, applyTransform} from "../style.js";
 import {maybeSameValue} from "./link.js";
 
 const defaults = {
@@ -44,10 +45,10 @@ export class Arrow extends Mark {
     this.insetStart = +insetStart;
     this.insetEnd = +insetEnd;
   }
-  render(index, {x, y}, channels, dimensions) {
+  render(index, scales, channels, dimensions, context) {
     const {x1: X1, y1: Y1, x2: X2 = X1, y2: Y2 = Y1, SW} = channels;
-    const {dx, dy, strokeWidth, bend, headAngle, headLength, insetStart, insetEnd} = this;
-    const sw = SW ? i => SW[i] : () => strokeWidth;
+    const {strokeWidth, bend, headAngle, headLength, insetStart, insetEnd} = this;
+    const sw = SW ? i => SW[i] : constant(strokeWidth === undefined ? 1 : strokeWidth);
 
     // When bending, the offset between the straight line between the two points
     // and the outgoing tangent from the start point. (Also the negative
@@ -64,19 +65,21 @@ export class Arrow extends Mark {
     // the end point) relative to the stroke width.
     const wingScale = headLength / 1.5;
 
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, x, y, offset + dx, offset + dy)
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, scales)
         .call(g => g.selectAll()
           .data(index)
-          .join("path")
+          .enter()
+          .append("path")
             .call(applyDirectStyles, this)
             .attr("d", i => {
               // The start ⟨x1,y1⟩ and end ⟨x2,y2⟩ points may be inset, and the
               // ending line angle may be altered for inset swoopy arrows.
               let x1 = X1[i], y1 = Y1[i], x2 = X2[i], y2 = Y2[i];
-              let lineAngle = Math.atan2(y2 - y1, x2 - x1);
               const lineLength = Math.hypot(x2 - x1, y2 - y1);
+              if (lineLength <= insetStart + insetEnd) return null;
+              let lineAngle = Math.atan2(y2 - y1, x2 - x1);
 
               // We don’t allow the wing length to be too large relative to the
               // length of the arrow. (Plot.vector allows arbitrarily large
@@ -155,7 +158,7 @@ function pointPointCenter([ax, ay], [bx, by], r, sign) {
 function circleCircleIntersect([ax, ay, ar], [bx, by, br], sign) {
   const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
   const x = (dx * dx + dy * dy - br * br + ar * ar) / (2 * d);
-  const y = sign * Math.sign(ay) * Math.sqrt(ar * ar - x * x);
+  const y = sign * Math.sqrt(ar * ar - x * x);
   return [ax + (dx * x + dy * y) / d, ay + (dy * x - dx * y) / d];
 }
 

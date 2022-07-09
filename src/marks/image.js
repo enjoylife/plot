@@ -1,8 +1,8 @@
-import {create} from "d3";
+import {create} from "../context.js";
 import {positive} from "../defined.js";
 import {maybeFrameAnchor, maybeNumberChannel, maybeTuple, string} from "../options.js";
 import {Mark} from "../plot.js";
-import {applyChannelStyles, applyDirectStyles, applyIndirectStyles, applyTransform, applyAttr, offset, impliedString, applyFrameAnchor} from "../style.js";
+import {applyChannelStyles, applyDirectStyles, applyIndirectStyles, applyTransform, applyAttr, impliedString, applyFrameAnchor} from "../style.js";
 
 const defaults = {
   ariaLabel: "image",
@@ -59,16 +59,16 @@ export class Image extends Mark {
     this.crossOrigin = string(crossOrigin);
     this.frameAnchor = maybeFrameAnchor(frameAnchor);
   }
-  render(index, {x, y}, channels, dimensions) {
+  render(index, scales, channels, dimensions, context) {
     const {x: X, y: Y, width: W, height: H, src: S} = channels;
-    const {dx, dy} = this;
     const [cx, cy] = applyFrameAnchor(this, dimensions);
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, x, y, offset + dx, offset + dy)
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, scales)
         .call(g => g.selectAll()
           .data(index)
-          .join("image")
+          .enter()
+          .append("image")
             .call(applyDirectStyles, this)
             .attr("x", W && X ? i => X[i] - W[i] / 2 : W ? i => cx - W[i] / 2 : X ? i => X[i] - this.width / 2 : cx - this.width / 2)
             .attr("y", H && Y ? i => Y[i] - H[i] / 2 : H ? i => cy - H[i] / 2 : Y ? i => Y[i] - this.height / 2 : cy - this.height / 2)

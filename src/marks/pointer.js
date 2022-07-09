@@ -1,7 +1,7 @@
 import {create, namespaces, pointer as pointerof, quickselect, union} from "d3";
 import {identity, maybeTuple} from "../options.js";
 import {Mark} from "../plot.js";
-import {selection} from "../selection.js";
+import {selectionKey} from "../selection.js";
 import {applyDirectStyles, applyIndirectStyles} from "../style.js";
 
 const defaults = {
@@ -103,7 +103,7 @@ export class Pointer extends Mark {
     function select(S) {
       if (S === null) render([]);
       else if (!render(S)) return;
-      node[selection] = S;
+      node[selectionKey] = S;
       node.dispatchEvent(new Event("input", {bubbles: true}));
     }
 
@@ -212,7 +212,7 @@ export class Pointer extends Mark {
         });
 
     const node = g.node();
-    node[selection] = null;
+    node[selectionKey] = null;
     return node;
   }
 }

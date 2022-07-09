@@ -1,6 +1,6 @@
 import {InternMap, cumsum, group, groupSort, greatest, max, min, rollup, sum} from "d3";
 import {ascendingDefined} from "../defined.js";
-import {field, lazyChannel, maybeLazyChannel, maybeZ, mid, range, valueof, maybeZero} from "../options.js";
+import {field, column, maybeColumn, maybeZ, mid, range, valueof, maybeZero, one} from "../options.js";
 import {basic} from "./basic.js";
 
 export function stackX(stackOptions = {}, options = {}) {
@@ -65,11 +65,11 @@ function mergeOptions(options) {
   return [{offset, order, reverse}, rest];
 }
 
-function stack(x, y = () => 1, ky, {offset, order, reverse}, options) {
+function stack(x, y = one, ky, {offset, order, reverse}, options) {
   const z = maybeZ(options);
-  const [X, setX] = maybeLazyChannel(x);
-  const [Y1, setY1] = lazyChannel(y);
-  const [Y2, setY2] = lazyChannel(y);
+  const [X, setX] = maybeColumn(x);
+  const [Y1, setY1] = column(y);
+  const [Y2, setY2] = column(y);
   offset = maybeOffset(offset);
   order = maybeOrder(order, offset, ky);
   return [
@@ -108,6 +108,7 @@ function stack(x, y = () => 1, ky, {offset, order, reverse}, options) {
 
 function maybeOffset(offset) {
   if (offset == null) return;
+  if (typeof offset === "function") return offset;
   switch (`${offset}`.toLowerCase()) {
     case "expand": case "normalize": return offsetExpand;
     case "center": case "silhouette": return offsetCenter;
@@ -224,7 +225,7 @@ function maybeOrder(order, offset, ky) {
   }
   if (typeof order === "function") return orderFunction(order);
   if (Array.isArray(order)) return orderGiven(order);
-  throw new Error("invalid order");
+  throw new Error(`invalid order: ${order}`);
 }
 
 // by value

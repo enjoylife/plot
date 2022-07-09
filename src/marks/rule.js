@@ -1,4 +1,4 @@
-import {create} from "d3";
+import {create} from "../context.js";
 import {identity, number} from "../options.js";
 import {Mark} from "../plot.js";
 import {isCollapsed} from "../scales.js";
@@ -34,16 +34,18 @@ export class RuleX extends Mark {
     this.insetTop = number(insetTop);
     this.insetBottom = number(insetBottom);
   }
-  render(index, {x, y}, channels, dimensions) {
+  render(index, scales, channels, dimensions, context) {
+    const {x, y} = scales;
     const {x: X, y1: Y1, y2: Y2} = channels;
     const {width, height, marginTop, marginRight, marginLeft, marginBottom} = dimensions;
     const {insetTop, insetBottom} = this;
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, X && x, null, offset, 0)
-        .call(g => g.selectAll("line")
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, {x: X && x}, offset, 0)
+        .call(g => g.selectAll()
           .data(index)
-          .join("line")
+          .enter()
+          .append("line")
             .call(applyDirectStyles, this)
             .attr("x1", X ? i => X[i] : (marginLeft + width - marginRight) / 2)
             .attr("x2", X ? i => X[i] : (marginLeft + width - marginRight) / 2)
@@ -77,16 +79,18 @@ export class RuleY extends Mark {
     this.insetRight = number(insetRight);
     this.insetLeft = number(insetLeft);
   }
-  render(index, {x, y}, channels, dimensions) {
+  render(index, scales, channels, dimensions, context) {
+    const {x, y} = scales;
     const {y: Y, x1: X1, x2: X2} = channels;
     const {width, height, marginTop, marginRight, marginLeft, marginBottom} = dimensions;
-    const {insetLeft, insetRight, dx, dy} = this;
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, null, Y && y, dx, offset + dy)
-        .call(g => g.selectAll("line")
+    const {insetLeft, insetRight} = this;
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, {y: Y && y}, 0, offset)
+        .call(g => g.selectAll()
           .data(index)
-          .join("line")
+          .enter()
+          .append("line")
             .call(applyDirectStyles, this)
             .attr("x1", X1 && !isCollapsed(x) ? i => X1[i] + insetLeft : marginLeft + insetLeft)
             .attr("x2", X2 && !isCollapsed(x) ? (x.bandwidth ? i => X2[i] + x.bandwidth() - insetRight : i => X2[i] - insetRight) : width - marginRight - insetRight)

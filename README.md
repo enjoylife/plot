@@ -1,14 +1,22 @@
 # Observable Plot
 
-**Observable Plot** is a JavaScript library for exploratory data visualization.
+**Observable Plot** is a JavaScript library for exploratory data visualization. If you are new to Plot, we highly recommend first reading these notebooks to introduce Plot’s core concepts such as *marks* and *scales*:
 
-* [Introduction](https://observablehq.com/@observablehq/plot)
-* [Installing](#installing)
-* [API Reference](#plotplotoptions)
-* [Changelog](./CHANGELOG.md)
-* [Contributing](./CONTRIBUTING.md)
+* [Introduction](https://observablehq.com/@observablehq/plot?collection=@observablehq/plot) - a quick tour, and Plot’s motivations
+* [Marks and Channels](https://observablehq.com/@observablehq/plot-marks?collection=@observablehq/plot) - drawing data-driven shapes with Plot
+* [Scales](https://observablehq.com/@observablehq/plot-scales?collection=@observablehq/plot) - visual encodings for abstract data
+* [Transforms](https://observablehq.com/@observablehq/plot-transforms?collection=@observablehq/plot) - deriving data
+* [Facets](https://observablehq.com/@observablehq/plot-facets?collection=@observablehq/plot) - small multiples
+* [Legends](https://observablehq.com/@observablehq/plot-legends?collection=@observablehq/plot) - documenting visual encodings
 
-For a quick overview, see the interactive [Plot Cheatsheets](https://observablehq.com/@observablehq/plot-cheatsheets) or [download the PDF](https://github.com/observablehq/plot-cheatsheets/raw/main/plot-cheatsheets.pdf).
+This README is intended as a technical reference for Plot’s API. For more, please see:
+
+* [Cheatsheets](https://observablehq.com/@observablehq/plot-cheatsheets) - a handy, interactive guide
+* [Changelog](./CHANGELOG.md) - release notes
+* [Contributing](./CONTRIBUTING.md) - if you’d like to help build Plot
+* [Discussions](https://github.com/observablehq/plot/discussions) - if you’d like help
+* [Forum](https://talk.observablehq.com/c/help/6) - another place to ask for help
+* [Issues](https://github.com/observablehq/plot/issues) - to file a bug or request a new feature
 
 ## Installing
 
@@ -31,9 +39,9 @@ In vanilla HTML, Plot can be imported as an ES module, say from Skypack:
 ```html
 <script type="module">
 
-import * as Plot from "https://cdn.skypack.dev/@observablehq/plot@0.4";
+import * as Plot from "https://cdn.skypack.dev/@observablehq/plot@0.5";
 
-document.body.appendChild(Plot.plot(options));
+document.body.append(Plot.plot(options));
 
 </script>
 ```
@@ -42,13 +50,15 @@ Plot is also available as a UMD bundle for legacy browsers.
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.5"></script>
 <script>
 
-document.body.appendChild(Plot.plot(options));
+document.body.append(Plot.plot(options));
 
 </script>
 ```
+
+See also our [Plot + React example](https://github.com/observablehq/plot-create-react-app-example/blob/main/src/App.js).
 
 ## Plot.plot(*options*)
 
@@ -56,22 +66,17 @@ Renders a new plot given the specified *options* and returns the corresponding S
 
 ### Mark options
 
-The **marks** option specifies an array of [marks](#marks) to render. Each mark has its own data and options; see the respective mark type (*e.g.*, [bar](#bar) or [dot](#dot)) for which mark options are supported. Each mark may be a nested array of marks, allowing composition. Marks may also be a function which returns an SVG element, if you wish to insert some arbitrary content into your plot. And marks may be null or undefined, which produce no output; this is useful for showing marks conditionally (*e.g.*, when a box is checked). Marks are drawn in *z*-order, last on top. For example, here bars for the dataset *alphabet* are drawn on top of a single rule at *y* = 0.
+The **marks** option specifies an array of [marks](#marks) to render. Each mark has its own data and options; see the respective mark type (*e.g.*, [bar](#bar) or [dot](#dot)) for which mark options are supported. Each mark may be a nested array of marks, allowing composition. Marks may also be a function which returns an SVG element, if you wish to insert some arbitrary content into your plot. And marks may be null or undefined, which produce no output; this is useful for showing marks conditionally (*e.g.*, when a box is checked). Marks are drawn in *z* order, last on top. For example, here a single rule at *y* = 0 is drawn on top of blue bars for the [*alphabet* dataset](./test/data/alphabet.csv).
 
 ```js
 Plot.plot({
   marks: [
-    Plot.ruleY([0]),
-    Plot.barY(alphabet, {x: "letter", y: "frequency"})
+    Plot.barY(alphabet, {x: "letter", y: "frequency", fill: "steelblue"}),
+    Plot.ruleY([0])
   ]
 })
 ```
 
-When drawing a single mark, you can call *mark*.**plot**(*options*) as shorthand.
-
-```js
-Plot.barY(alphabet, {x: "letter", y: "frequency"}).plot()
-```
 ### Layout options
 
 These options determine the overall layout of the plot; all are specified as numbers in pixels:
@@ -84,7 +89,7 @@ These options determine the overall layout of the plot; all are specified as num
 * **width** - the outer width of the plot (including margins)
 * **height** - the outer height of the plot (including margins)
 
-The default **width** is 640. On Observable, the width can be set to the [standard width](https://github.com/observablehq/stdlib/blob/master/README.md#width) to make responsive plots. The default **height** is chosen automatically based on the plot’s associated scales; for example, if *y* is linear and there is no *fy* scale, it might be 396.
+The default **width** is 640. On Observable, the width can be set to the [standard width](https://github.com/observablehq/stdlib/blob/main/README.md#width) to make responsive plots. The default **height** is chosen automatically based on the plot’s associated scales; for example, if *y* is linear and there is no *fy* scale, it might be 396.
 
 The default margins depend on the plot’s axes: for example, **marginTop** and **marginBottom** are at least 30 if there is a corresponding top or bottom *x* axis, and **marginLeft** and **marginRight** are at least 40 if there is a corresponding left or right *y* axis. For simplicity’s sake and for consistent layout across plots, margins are not automatically sized to make room for tick labels; instead, shorten your tick labels or increase the margins as needed. (In the future, margins may be specified indirectly via a scale property to make it easier to reorient axes without adjusting margins; see [#210](https://github.com/observablehq/plot/issues/210).)
 
@@ -110,6 +115,8 @@ Plot.plot({
 ```
 
 The generated SVG element has a random class name which applies a default stylesheet. Use the top-level **className** option to specify that class name.
+
+The **document** option specifies the [document](https://developer.mozilla.org/en-US/docs/Web/API/Document) used to create plot elements. It defaults to window.document, but can be changed to another document, say when using a virtual DOM library for server-side rendering in Node.
 
 ### Scale options
 
@@ -180,12 +187,15 @@ A scale’s domain (the extent of its inputs, abstract values) and range (the ex
 * *scale*.**range** - typically [*min*, *max*], or an array of ordinal or categorical values
 * *scale*.**unknown** - the desired output value (defaults to undefined) for invalid input values
 * *scale*.**reverse** - reverses the domain (or in somes cases, the range), say to flip the chart along *x* or *y*
+* *scale*.**interval** - an interval or time interval (for interval data; see below)
 
 For most quantitative scales, the default domain is the [*min*, *max*] of all values associated with the scale. For the *radius* and *opacity* scales, the default domain is [0, *max*] to ensure a meaningful value encoding. For ordinal scales, the default domain is the set of all distinct values associated with the scale in natural ascending order; for a different order, set the domain explicitly or add a [sort option](#sort-options) to an associated mark. For threshold scales, the default domain is [0] to separate negative and non-negative values. For quantile scales, the default domain is the set of all defined values associated with the scale. If a scale is reversed, it is equivalent to setting the domain as [*max*, *min*] instead of [*min*, *max*].
 
 The default range depends on the scale: for [position scales](#position-options) (*x*, *y*, *fx*, and *fy*), the default range depends on the plot’s [size and margins](#layout-options). For [color scales](#color-options), there are default color schemes for quantitative, ordinal, and categorical data. For opacity, the default range is [0, 1]. And for radius, the default range is designed to produce dots of “reasonable” size assuming a *sqrt* scale type for accurate area representation: zero maps to zero, the first quartile maps to a radius of three pixels, and other values are extrapolated. This convention for radius ensures that if the scale’s data values are all equal, dots have the default constant radius of three pixels, while if the data varies, dots will tend to be larger.
 
-The behavior of the *scale*.unknown option depends on the scale type. For quantitative and temporal scales, the unknown value is used whenever the input value is undefined, null, or NaN. For ordinal or categorical scales, the unknown value is returned for any input value outside the domain. For band or point scales, the unknown option has no effect; it is effectively always equal to undefined. If the unknown option is set to undefined (the default), or null or NaN, then the affected input values will be considered undefined and filtered from the output.
+The behavior of the *scale*.**unknown** option depends on the scale type. For quantitative and temporal scales, the unknown value is used whenever the input value is undefined, null, or NaN. For ordinal or categorical scales, the unknown value is returned for any input value outside the domain. For band or point scales, the unknown option has no effect; it is effectively always equal to undefined. If the unknown option is set to undefined (the default), or null or NaN, then the affected input values will be considered undefined and filtered from the output.
+
+For data at regular intervals, such as integer values or daily samples, the *scale*.**interval** option can be used to enforce uniformity. The specified *interval*—such as d3.utcMonth—must expose an *interval*.floor(*value*), *interval*.offset(*value*), and *interval*.range(*start*, *stop*) functions. The option can also be specified as a number, in which case it will be promoted to a numeric interval with the given step. This option sets the default *scale*.transform to the given interval’s *interval*.floor function. In addition, the default *scale*.domain is an array of uniformly-spaced values spanning the extent of the values associated with the scale.
 
 Quantitative scales can be further customized with additional options:
 
@@ -194,7 +204,7 @@ Quantitative scales can be further customized with additional options:
 * *scale*.**zero** - if true, extend the domain to include zero if needed
 * *scale*.**percent** - if true, transform proportions in [0, 1] to percentages in [0, 100]
 
-Clamping is typically used in conjunction with setting an explicit domain since if the domain is inferred, no values will be outside the domain. Clamping is useful for focusing on a subset of the data while ensuring that extreme values remain visible, but use caution: clamped values may need an annotation to avoid misinterpretation. Top-level **clamp** and **nice** options are supported as shorthand for setting *scale*.clamp and *scale*.nice on all scales.
+Clamping is typically used in conjunction with setting an explicit domain since if the domain is inferred, no values will be outside the domain. Clamping is useful for focusing on a subset of the data while ensuring that extreme values remain visible, but use caution: clamped values may need an annotation to avoid misinterpretation. Top-level **clamp**, **nice**, and **zero** options are supported as shorthand for setting the respective option on all scales.
 
 The *scale*.**transform** option allows you to apply a function to all values before they are passed through the scale. This is convenient for transforming a scale’s data, say to convert to thousands or between temperature units.
 
@@ -208,7 +218,9 @@ Plot.plot({
 })
 ```
 
-Scale definitions are exposed through the *plot*.**scale**(*name*) function of the returned plot.
+#### *plot*.scale(*scaleName*)
+
+Scale definitions can be exposed through the *plot*.**scale**(*scaleName*) function of a returned plot. The *scaleName* must be one of the known scale names: `"x"`, `"y"`, `"fx"`, `"fy"`, `"r"`, `"color"`, `"opacity"`, `"symbol"`, or `"length"`. If the associated *plot* has no scale with the given *scaleName*, returns undefined.
 
 ```js
 const plot = Plot.plot(…); // render a plot
@@ -216,24 +228,26 @@ const color = plot.scale("color"); // retrieve the color scale object
 console.log(color.range); // inspect the color scale’s range, ["red", "blue"]
 ```
 
-You can also create a standalone scale with Plot.**scale**(*options*):
+#### Plot.scale(*options*)
+
+You can also create a standalone scale with Plot.**scale**(*options*). The *options* object must define at least one scale; see [Scale options](#scale-options) for how to define a scale. For example, here is a linear color scale with the default domain of [0, 1] and default scheme *turbo*:
 
 ```js
 const color = Plot.scale({color: {type: "linear"}});
 ```
 
-To reuse a scale across plots, pass the scale object into another plot specification:
+#### Scale objects
+
+Both [*plot*.scale](#plotscalescalename) and [Plot.scale](#plotscaleoptions) return scale objects. These objects represent the actual (or “materialized”) scale options used by Plot, including the domain, range, interpolate function, *etc.* The scale’s label, if any, is also returned; however, note that other axis properties are not currently exposed. Point and band scales also expose their materialized bandwidth and step.
+
+To reuse a scale across plots, pass the corresponding scale object into another plot specification:
 
 ```js
 const plot1 = Plot.plot(…);
 const plot2 = Plot.plot({…, color: plot1.scale("color")});
 ```
 
-The returned scale object represents the actual (or “materialized”) values encountered in the plot, including the domain, range, interpolate function, *etc.* The scale’s label, if any, is also returned; however, note that other axis properties are not currently exposed.
-
-For convenience, an apply method is exposed, which returns the scale’s output for any given input. When applicable, an invert method is exposed, which returns the corresponding input from the scale’s domain for any given output. Point and band scales also expose their materialized bandwidth and step.
-
-The scale object is undefined if the associated plot has no scale with the given *name*, and throws an error if the *name* is invalid (*i.e.*, not one of the known scale names: *x*, *y*, *fx*, *fy*, *r*, *color*, or *opacity*).
+For convenience, scale objects expose a *scale*.**apply**(*input*) method which returns the scale’s output for the given *input* value. When applicable, scale objects also expose a *scale*.**invert**(*output*) method which returns the corresponding input value from the scale’s domain for the given *output* value.
 
 ### Position options
 
@@ -254,7 +268,7 @@ Similarly, the *y* and *fy* scales support asymmetric insets with:
 
 The inset scale options can provide “breathing room” to separate marks from axes or the plot’s edge. For example, in a scatterplot with a Plot.dot with the default 3-pixel radius and 1.5-pixel stroke width, an inset of 5 pixels prevents dots from overlapping with the axes. The *scale*.round option is useful for crisp edges by rounding to the nearest pixel boundary.
 
-In addition to the generic *ordinal* scale type, which requires an explicit output range value for each input domain value, Plot supports special *point* and *band* scale types for encoding ordinal data as position. These scale types accept a [*min*, *max*] range similar to quantitative scales, and divide this continuous interval into discrete points or bands based on the number of distinct values in the domain (*i.e.*, the domain’s cardinality). If the associated marks have no effective width along the ordinal dimension—such as a dot, rule, or tick—then use a *point* scale; otherwise, say for a bar, use a *band* scale. In the image below, the top *x*-scale is a *point* scale while the bottom *x*-scale is a *band* scale; see [Plot: Scales](https://observablehq.com/@observablehq/plot-scales) for an interactive version.
+In addition to the generic *ordinal* scale type, which requires an explicit output range value for each input domain value, Plot supports special *point* and *band* scale types for encoding ordinal data as position. These scale types accept a [*min*, *max*] range similar to quantitative scales, and divide this continuous interval into discrete points or bands based on the number of distinct values in the domain (*i.e.*, the domain’s cardinality). If the associated marks have no effective width along the ordinal dimension—such as a dot, rule, or tick—then use a *point* scale; otherwise, say for a bar, use a *band* scale. In the image below, the top *x* scale is a *point* scale while the bottom *x* scale is a *band* scale; see [Plot: Scales](https://observablehq.com/@observablehq/plot-scales) for an interactive version.
 
 <img src="./img/point-band.png" width="640" height="144" alt="point and band scales">
 
@@ -283,7 +297,7 @@ Plot automatically generates axes for position scales. You can configure these a
 * *scale*.**label** - a string to label the axis
 * *scale*.**labelAnchor** - the label anchor: *top*, *right*, *bottom*, *left*, or *center*
 * *scale*.**labelOffset** - the label position offset (in pixels; default 0, typically for facet axes)
-* *scale*.**fontVariant** - the font-variant attribute for axis ticks; defaults to tabular-nums for quantitative axes.
+* *scale*.**fontVariant** - the font-variant attribute for axis ticks; defaults to tabular-nums for quantitative axes
 * *scale*.**ariaLabel** - a short label representing the axis in the accessibility tree
 * *scale*.**ariaDescription** - a textual description for the axis
 
@@ -296,15 +310,16 @@ The normal scale types—*linear*, *sqrt*, *pow*, *log*, *symlog*, and *ordinal*
 * *categorical* - equivalent to *ordinal*, but defaults to the *tableau10* scheme
 * *sequential* - equivalent to *linear*
 * *cyclical* - equivalent to *linear*, but defaults to the *rainbow* scheme
-* *threshold* - encodes based on the specified discrete thresholds
-* *quantile* - encodes based on the computed quantile thresholds
+* *threshold* - encodes based on the specified discrete thresholds; defaults to the *rdylbu* scheme
+* *quantile* - encodes based on the computed quantile thresholds; defaults to the *rdylbu* scheme
+* *quantize* - transforms a continuous domain into quantized thresholds; defaults to the *rdylbu* scheme
 * *diverging* - like *linear*, but with a pivot; defaults to the *rdbu* scheme
 * *diverging-log* - like *log*, but with a pivot that defaults to 1; defaults to the *rdbu* scheme
 * *diverging-pow* - like *pow*, but with a pivot; defaults to the *rdbu* scheme
 * *diverging-sqrt* - like *sqrt*, but with a pivot; defaults to the *rdbu* scheme
 * *diverging-symlog* - like *symlog*, but with a pivot; defaults to the *rdbu* scheme
 
-For a *threshold* scale, the *domain* represents *n* (typically numeric) thresholds which will produce a *range* of *n* + 1 output colors; the *i*th color of the *range* applies to values that are smaller than the *i*th element of the domain and larger or equal to the *i* - 1th element of the domain. For a *quantile* scale, the *domain* represents all input values to the scale, and the *quantiles* option specifies how many quantiles to compute from the *domain*; *n* quantiles will produce *n* - 1 thresholds, and an output range of *n* colors.
+For a *threshold* scale, the *domain* represents *n* (typically numeric) thresholds which will produce a *range* of *n* + 1 output colors; the *i*th color of the *range* applies to values that are smaller than the *i*th element of the domain and larger or equal to the *i* - 1th element of the domain. For a *quantile* scale, the *domain* represents all input values to the scale, and the *n* option specifies how many quantiles to compute from the *domain*; *n* quantiles will produce *n* - 1 thresholds, and an output range of *n* colors. For a *quantize* scale, the domain will be transformed into approximately *n* quantized values, where *n* is an option that defaults to 5.
 
 By default, all diverging color scales are symmetric around the pivot; set *symmetric* to false if you want to cover the whole extent on both sides.
 
@@ -313,7 +328,7 @@ Color scales support two additional options:
 * *scale*.**scheme** - a named color scheme in lieu of a range, such as *reds*
 * *scale*.**interpolate** - in conjunction with a range, how to interpolate colors
 
-For quantile color scales, the *scale*.scheme option is used in conjunction with *scale*.**quantiles**, which determines how many quantiles to compute, and thus the number of elements in the scale’s range; it defaults to 5 for quintiles.
+For quantile and quantize color scales, the *scale*.scheme option is used in conjunction with *scale*.**n**, which determines how many quantiles or quantized values to compute, and thus the number of elements in the scale’s range; it defaults to 5 (for quintiles in the case of a quantile scale).
 
 The following sequential scale schemes are supported for both quantitative and ordinal data:
 
@@ -361,7 +376,7 @@ The following diverging scale schemes are supported:
 * <sub><img src="./img/burd.png" width="32" height="16" alt="burd"></sub> *burd*
 * <sub><img src="./img/buylrd.png" width="32" height="16" alt="buylrd"></sub> *buylrd*
 
-Diverging color scales support a *scale*.**pivot** option, which defaults to zero. Values below the pivot will use the lower half of the color scheme (*e.g.*, reds for the *rdgy* scheme), while values above the pivot will use the upper half (grays for *rdgy*).
+Picking a diverging color scheme name defaults the scale type to *diverging*; set the scale type to *linear* to treat the color scheme as sequential instead. Diverging color scales support a *scale*.**pivot** option, which defaults to zero. Values below the pivot will use the lower half of the color scheme (*e.g.*, reds for the *rdgy* scheme), while values above the pivot will use the upper half (grays for *rdgy*).
 
 The following cylical color schemes are supported:
 
@@ -508,9 +523,36 @@ Plot can generate legends for *color*, *opacity*, and *symbol* [scales](#scale-o
 
 If the *scale*.**legend** option is true, the default legend will be produced for the scale; otherwise, the meaning of the *legend* option depends on the scale. For quantitative color scales, it defaults to *ramp* but may be set to *swatches* for a discrete scale (most commonly for *threshold* color scales); for ordinal color scales and symbol scales, only the *swatches* value is supported.
 
-#### *plot*.legend(*name*, *options*)
+For example, this scatterplot includes a swatches legend for the ordinal color scale:
 
-Given an existing *plot* returned by [Plot.plot](#plotplotoptions), returns a legend for the *plot*’s scale with the given *name*. For example:
+```js
+Plot.plot({
+  color: {
+    legend: true
+  },
+  marks: [
+    Plot.dot(athletes, {x: "weight", y: "height", stroke: "sex"})
+  ]
+})
+```
+
+Whereas this scatterplot would render a ramp legend for its diverging color scale:
+
+```js
+Plot.plot({
+  color: {
+    type: "diverging",
+    legend: true
+  },
+  marks: [
+    Plot.dot(gistemp, {x: "Date", y: "Anomaly", stroke: "Anomaly"})
+  ]
+})
+```
+
+#### *plot*.legend(*scaleName*, *options*)
+
+Given an existing *plot* returned by [Plot.plot](#plotplotoptions), returns a detached legend for the *plot*’s scale with the given *scaleName*. The *scaleName* must refer to a scale that supports legends: either `"color"`, `"opacity"`, or `"symbol"`. For example:
 
 ```js
 myplot = Plot.plot(…)
@@ -518,6 +560,14 @@ myplot = Plot.plot(…)
 ```js
 mylegend = myplot.legend("color")
 ```
+
+Or, with additional *options*:
+
+```js
+mylegend = myplot.legend("color", {width: 320})
+```
+
+If there is no scale with the given *scaleName* on the given *plot*, then *plot*.legend will return undefined.
 
 Categorical and ordinal color legends are rendered as swatches, unless *options*.**legend** is set to *ramp*. The swatches can be configured with the following options:
 
@@ -555,19 +605,32 @@ Continuous color legends are rendered as a ramp, and can be configured with the 
 * *options*.**marginBottom** - the legend’s bottom margin
 * *options*.**marginLeft** - the legend’s left margin
 
+The **style** legend option allows custom styles to override Plot’s defaults; it has the same behavior as in Plot’s top-level [layout options](#layout-options).
+
 #### Plot.legend(*options*)
 
-Returns a standalone legend for the given *scale* definition, passing the *options* described in the previous section. For example:
+Returns a standalone legend for the scale defined by the given *options* object. The *options* object must define at least one scale; see [Scale options](#scale-options) for how to define a scale. For example, here is a ramp legend of a linear color scale with the default domain of [0, 1] and default scheme *turbo*:
 
 ```js
 Plot.legend({color: {type: "linear"}})
+```
+
+The *options* object may also include any additional legend options described in the previous section. For example, to make the above legend slightly wider:
+
+```js
+Plot.legend({
+  width: 320,
+  color: {
+    type: "linear"
+  }
+})
 ```
 
 ## Marks
 
 [Marks](https://observablehq.com/@observablehq/plot-marks) visualize data as geometric shapes such as bars, dots, and lines. An single mark can generate multiple shapes: for example, passing a [Plot.barY](#plotbarydata-options) to [Plot.plot](#plotplotoptions) will produce a bar for each element in the associated data. Multiple marks can be layered into [plots](#plotplotoptions).
 
-Mark constructors take two arguments: **data** and **options**. Together these describe a tabular dataset and how to visualize it. Options that are shared by all of a mark’s generated shapes are known as *constants*, while options that vary with the mark’s data are known as *channels*. Channels are typically bound to [scales](#scale-options) and encode abstract values, such as time or temperature, as visual values, such as position or color. (Channels can also be used to order ordinal domains; see [sort options](#sort-options).)
+Mark constructors take two arguments: **data** and **options**. Together these describe a tabular dataset and how to visualize it. Option values that must be the same for all of a mark’s generated shapes are known as *constants*, whereas option values that may vary across a mark’s generated shapes are known as *channels*. Channels are typically bound to [scales](#scale-options) and encode abstract data values, such as time or temperature, as visual values, such as position or color. (Channels can also be used to order ordinal domains; see [sort options](#sort-options).)
 
 A mark’s data is most commonly an array of objects representing a tabular dataset, such as the result of loading a CSV file, while a mark’s options bind channels (such as *x* and *y*) to columns in the data (such as *units* and *fruit*).
 
@@ -583,7 +646,7 @@ sales = [
 Plot.dot(sales, {x: "units", y: "fruit"}).plot()
 ```
 
-While a column name such as `"units"` is the most concise way of specifying channel values, values can also be specified as functions for greater flexibility, say to transform data or derive a new column on the fly. Channel functions are invoked for each datum (*d*) in the data and return the corresponding channel value. (This is similar to how D3’s [*selection*.attr](https://github.com/d3/d3-selection/blob/master/README.md#selection_attr) accepts functions, though note that Plot channel functions should return abstract values, not visual values.)
+While a column name such as `"units"` is the most concise way of specifying channel values, values can also be specified as functions for greater flexibility, say to transform data or derive a new column on the fly. Channel functions are invoked for each datum (*d*) in the data and return the corresponding channel value. (This is similar to how D3’s [*selection*.attr](https://github.com/d3/d3-selection/blob/main/README.md#selection_attr) accepts functions, though note that Plot channel functions should return abstract values, not visual values.)
 
 ```js
 Plot.dot(sales, {x: d => d.units * 1000, y: d => d.fruit}).plot()
@@ -633,6 +696,8 @@ All marks support the following style options:
 * **target** - link target (e.g., “_blank” for a new window); for use with the **href** channel
 * **ariaDescription** - a textual description of the mark’s contents
 * **ariaHidden** - if true, hide this content from the accessibility tree
+* **pointerEvents** - the [pointer events](https://developer.mozilla.org/en-US/docs/Web/CSS/pointer-events) (*e.g.*, *none*)
+* **clip** - if true, the mark is clipped to the frame’s dimensions
 
 For all marks except [text](#plottextdata-options), the **dx** and **dy** options are rendered as a transform property, possibly including a 0.5px offset on low-density screens.
 
@@ -647,9 +712,10 @@ All marks support the following optional channels:
 * **title** - a tooltip (a string of text, possibly with newlines)
 * **href** - a URL to link to
 * **ariaLabel** - a short label representing the value in the accessibility tree
-* **clip** - if true, the mark is clipped to the frame’s dimensions
 
 The **fill**, **fillOpacity**, **stroke**, **strokeWidth**, **strokeOpacity**, and **opacity** options can be specified as either channels or constants. When the fill or stroke is specified as a function or array, it is interpreted as a channel; when the fill or stroke is specified as a string, it is interpreted as a constant if a valid CSS color and otherwise it is interpreted as a column name for a channel. Similarly when the fill opacity, stroke opacity, object opacity, stroke width, or radius is specified as a number, it is interpreted as a constant; otherwise it is interpreted as a channel.
+
+The **title**, **href**, and **ariaLabel** options can *only* be specified as channels. When these options are specified as a string, the string refers to the name of a column in the mark’s associated data. If you’d like every instance of a particular mark to have the same value, specify the option as a function that returns the desired value, *e.g.* `() => "Hello, world!"`.
 
 The rectangular marks ([bar](#bar), [cell](#cell), and [rect](#rect)) support insets and rounded corner constant options:
 
@@ -657,14 +723,43 @@ The rectangular marks ([bar](#bar), [cell](#cell), and [rect](#rect)) support in
 * **insetRight** - inset the right edge
 * **insetBottom** - inset the bottom edge
 * **insetLeft** - inset the left edge
-* **rx** - the [*x*-radius](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/rx) for rounded corners
-* **ry** - the [*y*-radius](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/ry) for rounded corners
+* **rx** - the [*x* radius](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/rx) for rounded corners
+* **ry** - the [*y* radius](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/ry) for rounded corners
 
 Insets are specified in pixels. Corner radii are specified in either pixels or percentages (strings). Both default to zero. Insets are typically used to ensure a one-pixel gap between adjacent bars; note that the [bin transform](#bin) provides default insets, and that the [band scale padding](#position-options) defaults to 0.1, which also provides separation.
 
+For marks that support the <a name="frameanchor">**frameAnchor**</a> option, it may be specified as one of the four sides (*top*, *right*, *bottom*, *left*), one of the four corners (*top-left*, *top-right*, *bottom-right*, *bottom-left*), or the *middle* of the frame.
+
+#### *mark*.plot(*options*)
+
+Given a *mark*, such as the result of calling [Plot.barY](#plotbarydata-options), you can call *mark*.plot to render a plot. This is [shorthand](https://observablehq.com/@observablehq/plot-shorthand?collection=@observablehq/plot) for calling [Plot.plot](#plotplotoptions) where the *marks* option specifies this single mark.
+
+```js
+const mark = Plot.barY(alphabet, {x: "letter", y: "frequency"});
+return mark.plot();
+```
+
+More commonly this shorthand is written as a single expression:
+
+```js
+Plot.barY(alphabet, {x: "letter", y: "frequency"}).plot()
+```
+
+This is equivalent to:
+
+```js
+Plot.plot({marks: [Plot.barY(alphabet, {x: "letter", y: "frequency"})]})
+```
+
+If needed, you can pass additional *options* to *mark*.plot, which is equivalent to passing *options* to Plot.plot. (If the *marks* option is used, additional marks are concatenated with the shorthand *mark*.)
+
+```js
+Plot.barY(alphabet, {x: "letter", y: "frequency"}).plot({width: 1024})
+```
+
 #### Plot.marks(...*marks*)
 
-A convenience method for composing a mark from a series of other marks. Returns an array of marks that implements the *mark*.plot function.
+A convenience method for composing a mark from a series of other marks. Returns an array of marks that implements the *mark*.plot function. See the [box mark implementation](./src/marks/box.js) for an example.
 
 ### Area
 
@@ -691,7 +786,7 @@ The **stroke** defaults to none. The **fill** defaults to currentColor if the st
 
 Points along the baseline and topline are connected in input order. Likewise, if there are multiple series via the *z*, *fill*, or *stroke* channel, the series are drawn in input order such that the last series is drawn on top. Typically, the data is already in sorted order, such as chronological for time series; if sorting is needed, consider a [sort transform](#transforms).
 
-The area mark supports [curve options](#curves) to control interpolation between points. If any of the *x1*, *y1*, *x2*, or *y2* values are invalid (undefined, null, or NaN), the baseline and topline will be interrupted, resulting in a break that divides the area shape into multiple segments. (See [d3-shape’s *area*.defined](https://github.com/d3/d3-shape/blob/master/README.md#area_defined) for more.) If an area segment consists of only a single point, it may appear invisible unless rendered with rounded or square line caps. In addition, some curves such as *cardinal-open* only render a visible segment if it contains multiple points.
+The area mark supports [curve options](#curves) to control interpolation between points. If any of the *x1*, *y1*, *x2*, or *y2* values are invalid (undefined, null, or NaN), the baseline and topline will be interrupted, resulting in a break that divides the area shape into multiple segments. (See [d3-shape’s *area*.defined](https://github.com/d3/d3-shape/blob/main/README.md#area_defined) for more.) If an area segment consists of only a single point, it may appear invisible unless rendered with rounded or square line caps. In addition, some curves such as *cardinal-open* only render a visible segment if it contains multiple points.
 
 #### Plot.area(*data*, *options*)
 
@@ -709,6 +804,14 @@ Plot.areaX(aapl, {y: "Date", x: "Close"})
 
 Returns a new area with the given *data* and *options*. This constructor is used when the baseline and topline share *y* values, as in a time-series area chart where time goes up↑. If neither the **x1** nor **x2** option is specified, the **x** option may be specified as shorthand to apply an implicit [stackX transform](#plotstackxstack-options); this is the typical configuration for an area chart with a baseline at *x* = 0. If the **x** option is not specified, it defaults to the identity function. The **y** option specifies the **y1** channel; and the **y1** and **y2** options are ignored.
 
+If the **interval** option is specified, the [binY transform](#bin) is implicitly applied to the specified *options*. The reducer of the output *x* channel may be specified via the **reduce** option, which defaults to *first*. To default to zero instead of showing gaps in data, as when the observed value represents a quantity, use the *sum* reducer.
+
+```js
+Plot.areaX(observations, {y: "date", x: "temperature", interval: d3.utcDay})
+```
+
+The **interval** option is recommended to “regularize” sampled data; for example, if your data represents timestamped temperature measurements and you expect one sample per day, use d3.utcDay as the interval.
+
 #### Plot.areaY(*data*, *options*)
 
 ```js
@@ -716,6 +819,14 @@ Plot.areaY(aapl, {x: "Date", y: "Close"})
 ```
 
 Returns a new area with the given *data* and *options*. This constructor is used when the baseline and topline share *x* values, as in a time-series area chart where time goes right→. If neither the **y1** nor **y2** option is specified, the **y** option may be specified as shorthand to apply an implicit [stackY transform](#plotstackystack-options); this is the typical configuration for an area chart with a baseline at *y* = 0. If the **y** option is not specified, it defaults to the identity function. The **x** option specifies the **x1** channel; and the **x1** and **x2** options are ignored.
+
+If the **interval** option is specified, the [binX transform](#bin) is implicitly applied to the specified *options*. The reducer of the output *y* channel may be specified via the **reduce** option, which defaults to *first*. To default to zero instead of showing gaps in data, as when the observed value represents a quantity, use the *sum* reducer.
+
+```js
+Plot.areaY(observations, {x: "date", y: "temperature", interval: d3.utcDay)
+```
+
+The **interval** option is recommended to “regularize” sampled data; for example, if your data represents timestamped temperature measurements and you expect one sample per day, use d3.utcDay as the interval.
 
 ### Arrow
 
@@ -732,7 +843,7 @@ The following channels are required:
 
 For vertical or horizontal arrows, the **x** option can be specified as shorthand for **x1** and **x2**, and the **y** option can be specified as shorthand for **y1** and **y2**, respectively.
 
-The arrow mark supports the [standard mark options](#marks). The **stroke** defaults to currentColor. The **fill** defaults to none. The **strokeWidth** and **strokeMiterlimit** default to one. The following additional options are supported:
+The arrow mark supports the [standard mark options](#marks). The **stroke** defaults to currentColor. The **fill** defaults to none. The **strokeWidth** defaults to 1.5, and the **strokeMiterlimit** defaults to one. The following additional options are supported:
 
 * **bend** - the bend angle, in degrees; defaults to zero
 * **headAngle** - the arrowhead angle, in degrees; defaults to 22.5°
@@ -770,7 +881,7 @@ Returns a new horizontal bar↔︎ with the given *data* and *options*. The foll
 * **x1** - the starting horizontal position; bound to the *x* scale
 * **x2** - the ending horizontal position; bound to the *x* scale
 
-If neither the **x1** nor **x2** option is specified, the **x** option may be specified as shorthand to apply an implicit [stackX transform](#plotstackxstack-options); this is the typical configuration for a horizontal bar chart with bars aligned at *x* = 0. If the **x** option is not specified, it defaults to the identity function.
+If neither the **x1** nor **x2** option is specified, the **x** option may be specified as shorthand to apply an implicit [stackX transform](#plotstackxstack-options); this is the typical configuration for a horizontal bar chart with bars aligned at *x* = 0. If the **x** option is not specified, it defaults to the identity function. If *options* is undefined, then it defaults to **x2** as the identity function and **y** as the index of data; this allows an array of numbers to be passed to Plot.barX to make a quick sequential bar chart.
 
 If an **interval** is specified, such as d3.utcDay, **x1** and **x2** can be derived from **x**: *interval*.floor(*x*) is invoked for each *x* to produce *x1*, and *interval*.offset(*x1*) is invoked for each *x1* to produce *x2*. If the interval is specified as a number *n*, *x1* and *x2* are taken as the two consecutive multiples of *n* that bracket *x*.
 
@@ -791,7 +902,7 @@ Returns a new vertical bar↕︎ with the given *data* and *options*. The follow
 * **y1** - the starting vertical position; bound to the *y* scale
 * **y2** - the ending vertical position; bound to the *y* scale
 
-If neither the **y1** nor **y2** option is specified, the **y** option may be specified as shorthand to apply an implicit [stackY transform](#plotstackystack-options); this is the typical configuration for a vertical bar chart with bars aligned at *y* = 0. If the **y** option is not specified, it defaults to the identity function.
+If neither the **y1** nor **y2** option is specified, the **y** option may be specified as shorthand to apply an implicit [stackY transform](#plotstackystack-options); this is the typical configuration for a vertical bar chart with bars aligned at *y* = 0. If the **y** option is not specified, it defaults to the identity function. If *options* is undefined, then it defaults to **y2** as the identity function and **x** as the index of data; this allows an array of numbers to be passed to Plot.barY to make a quick sequential bar chart.
 
 If an **interval** is specified, such as d3.utcDay, **y1** and **y2** can be derived from **y**: *interval*.floor(*y*) is invoked for each *y* to produce *y1*, and *interval*.offset(*y1*) is invoked for each *y1* to produce *y2*. If the interval is specified as a number *n*, *y1* and *y2* are taken as the two consecutive multiples of *n* that bracket *y*.
 
@@ -800,6 +911,43 @@ In addition to the [standard bar channels](#bar), the following optional channel
 * **x** - the horizontal position; bound to the *x* scale, which must be *band*
 
 If the **x** channel is not specified, the bar will span the full horizontal extent of the plot (or facet).
+
+### Box
+
+[<img src="./img/box.png" width="640" alt="a boxplot of Michelson’s 1879 measurements of the speed of light">](https://observablehq.com/@observablehq/plot-box)
+
+[Source](./src/marks/box.js) · [Examples](https://observablehq.com/@observablehq/plot-box) · Draws either horizontal boxplots where *x* is quantitative and *y* is ordinal (if present) or vertical boxplots where *y* is quantitative and *x* is ordinal (if present). Boxplots are often used to visualize one-dimensional distributions as an alternative to a histogram. (See also the [bin transform](#bin).)
+
+The box mark is a composite mark consisting of four marks:
+
+* a [rule](#rule) representing the extreme values (not including outliers)
+* a [bar](#bar) representing the interquartile range (trimmed to the data)
+* a [tick](#tick) represent the median value, and
+* a [dot](#dot) representing outliers, if any
+
+The given *options* are passed through to these underlying marks, with the exception of the following options:
+
+* **fill** - the fill color of the bar; defaults to gray
+* **fillOpacity** - the fill opacity of the bar; defaults to 1
+* **stroke** - the stroke color of the rule, tick, and dot; defaults to *currentColor*
+* **strokeOpacity** - the stroke opacity of the rule, tick, and dot; defaults to 1
+* **strokeWidth** - the stroke width of the tick; defaults to 1
+
+#### Plot.boxX(*data*, *options*)
+
+```js
+Plot.boxX(simpsons.map(d => d.imdb_rating))
+```
+
+Returns a horizontal boxplot mark. If the **x** option is not specified, it defaults to the identity function, as when *data* is an array of numbers. If the **y** option is not specified, it defaults to null; if the **y** option is specified, it should represent an ordinal (discrete) value.
+
+#### Plot.boxY(*data*, *options*)
+
+```js
+Plot.boxY(simpsons.map(d => d.imdb_rating))
+```
+
+Returns a vertical boxplot mark. If the **y** option is not specified, it defaults to the identity function, as when *data* is an array of numbers. If the **x** option is not specified, it defaults to null; if the **x** option is specified, it should represent an ordinal (discrete) value.
 
 ### Cell
 
@@ -840,6 +988,56 @@ Plot.cellY(simpsons.map(d => d.imdb_rating))
 
 Equivalent to [Plot.cell](#plotcelldata-options), except that if the **y** option is not specified, it defaults to [0, 1, 2, …], and if the **fill** option is not specified and **stroke** is not a channel, the fill defaults to the identity function and assumes that *data* = [*y₀*, *y₁*, *y₂*, …].
 
+### Delaunay
+
+[<img src="./img/voronoi.png" width="320" height="198" alt="a Voronoi diagram of penguin culmens, showing the length and depth of several species">](https://observablehq.com/@observablehq/plot-delaunay)
+
+[Source](./src/marks/delaunay.js) · [Examples](https://observablehq.com/@observablehq/plot-delaunay) · Plot provides a handful of marks for Delaunay and Voronoi diagrams (using [d3-delaunay](https://github.com/d3/d3-delaunay) and [Delaunator](https://github.com/mapbox/delaunator)). These marks require the **x** and **y** channels to be specified.
+
+#### Plot.delaunayLink(*data*, *options*)
+
+Draws links for each edge of the Delaunay triangulation of the points given by the **x** and **y** channels. Supports the same options as the [link mark](#link), except that **x1**, **y1**, **x2**, and **y2** are derived automatically from **x** and **y**. When an aesthetic channel is specified (such as **stroke** or **strokeWidth**), the link inherits the corresponding channel value from one of its two endpoints arbitrarily.
+
+If a **z** channel is specified, the input points are grouped by *z*, and separate Delaunay triangulations are constructed for each group.
+
+#### Plot.delaunayMesh(*data*, *options*)
+
+Draws a mesh of the Delaunay triangulation of the points given by the **x** and **y** channels. The **stroke** option defaults to _currentColor_, and the **strokeOpacity** defaults to 0.2. The **fill** option is not supported. When an aesthetic channel is specified (such as **stroke** or **strokeWidth**), the mesh inherits the corresponding channel value from one of its constituent points arbitrarily.
+
+If a **z** channel is specified, the input points are grouped by *z*, and separate Delaunay triangulations are constructed for each group.
+
+#### Plot.hull(*data*, *options*)
+
+Draws a convex hull around the points given by the **x** and **y** channels. The **stroke** option defaults to _currentColor_ and the **fill** option defaults to _none_. When an aesthetic channel is specified (such as **stroke** or **strokeWidth**), the hull inherits the corresponding channel value from one of its constituent points arbitrarily.
+
+If a **z** channel is specified, the input points are grouped by *z*, and separate convex hulls are constructed for each group. If the **z** channel is not specified, it defaults to either the **fill** channel, if any, or the **stroke** channel, if any.
+
+#### Plot.voronoi(*data*, *options*)
+
+Draws polygons for each cell of the Voronoi tesselation of the points given by the **x** and **y** channels.
+
+If a **z** channel is specified, the input points are grouped by *z*, and separate Voronoi tesselations are constructed for each group.
+
+#### Plot.voronoiMesh(*data*, *options*)
+
+Draws a mesh for the cell boundaries of the Voronoi tesselation of the points given by the **x** and **y** channels. The **stroke** option defaults to _currentColor_, and the **strokeOpacity** defaults to 0.2. The **fill** option is not supported. When an aesthetic channel is specified (such as **stroke** or **strokeWidth**), the mesh inherits the corresponding channel value from one of its constituent points arbitrarily.
+
+If a **z** channel is specified, the input points are grouped by *z*, and separate Voronoi tesselations are constructed for each group.
+
+### Density
+
+[<img src="./img/density-contours.png" width="320" height="200" alt="A scatterplot showing the relationship between the idle duration and eruption duration for Old Faithful">](https://observablehq.com/@observablehq/plot-density)
+
+[Source](./src/marks/density.js) · [Examples](https://observablehq.com/@observablehq/plot-density) · Draws contours representing the density of point clouds, implementing [two-dimensional kernel density estimation](https://en.wikipedia.org/wiki/Multivariate_kernel_density_estimation). Each contour represents the area where the estimated point density is greater than or equal to a given density value.
+
+#### Plot.density(*data*, *options*)
+
+Draws contours representing the estimated density of the two-dimensional points given by the **x** and **y** channels, and possibly weighted by the **weight** channel. If either of the **x** or **y** channels are not specified, the corresponding position is controlled by the **frameAnchor** option.
+
+The **thresholds** option, which defaults to 20, specifies one more than the number of contours that will be computed at uniformly-spaced intervals between 0 (exclusive) and the maximum density (exclusive). The **thresholds** option may also be specified as an array or iterable of explicit density values. The **bandwidth** option, which defaults to 20, specifies the standard deviation of the Gaussian kernel used for estimation in pixels.
+
+If a **z**, **stroke** or **fill** channel is specified, the input points are grouped by series, and separate sets of contours are generated for each series. If the **stroke** or **fill** is specified as *density*, a color channel is constructed with values representing the density threshold value of each contour.
+
 ### Dot
 
 [<img src="./img/dot.png" width="320" height="198" alt="a scatterplot">](https://observablehq.com/@observablehq/plot-dot)
@@ -861,13 +1059,13 @@ The following dot-specific constant options are also supported:
 * **r** - the effective radius (length); a number in pixels
 * **rotate** - the rotation angle in degrees clockwise; defaults to 0
 * **symbol** - the categorical symbol; defaults to circle
-* **frameAnchor** - the frame anchor; top-left, top, top-right, right, bottom-right, bottom, bottom-left, left, or middle (default)
+* **frameAnchor** - the [frame anchor](#frameanchor); defaults to *middle*
 
 The **r** option can be specified as either a channel or constant. When the radius is specified as a number, it is interpreted as a constant; otherwise it is interpreted as a channel. The radius defaults to 4.5 pixels when using the **symbol** channel, and otherwise 3 pixels. Dots with a nonpositive radius are not drawn.
 
 The **stroke** defaults to none. The **fill** defaults to currentColor if the stroke is none, and to none otherwise. The **strokeWidth** defaults to 1.5. The **rotate** and **symbol** options can be specified as either channels or constants. When rotate is specified as a number, it is interpreted as a constant; otherwise it is interpreted as a channel. When symbol is a valid symbol name or symbol object (implementing the draw method), it is interpreted as a constant; otherwise it is interpreted as a channel.
 
-The built-in **symbol** types are: *circle*, *cross*, *diamond*, *square*, *star*, *triangle*, and *wye* (for fill) and *circle*, *plus*, *times*, *triangle2*, *asterisk*, *square2*, and *diamond2* (for stroke, based on [Heman Robinson’s research](https://www.tandfonline.com/doi/abs/10.1080/10618600.2019.1637746)). You can also specify a D3 or custom symbol type as an object that implements the [*symbol*.draw(*context*, *size*)](https://github.com/d3/d3-shape/blob/main/README.md#custom-symbol-types) method.
+The built-in **symbol** types are: *circle*, *cross*, *diamond*, *square*, *star*, *triangle*, and *wye* (for fill) and *circle*, *plus*, *times*, *triangle2*, *asterisk*, *square2*, and *diamond2* (for stroke, based on [Heman Robinson’s research](https://www.tandfonline.com/doi/abs/10.1080/10618600.2019.1637746)). The *hexagon* symbol is also supported. You can also specify a D3 or custom symbol type as an object that implements the [*symbol*.draw(*context*, *size*)](https://github.com/d3/d3-shape/blob/main/README.md#custom-symbol-types) method.
 
 Dots are drawn in input order, with the last data drawn on top. If sorting is needed, say to mitigate overplotting by drawing the smallest dots on top, consider a [sort and reverse transform](#transforms).
 
@@ -887,6 +1085,8 @@ Plot.dotX(cars.map(d => d["economy (mpg)"]))
 
 Equivalent to [Plot.dot](#plotdotdata-options) except that if the **x** option is not specified, it defaults to the identity function and assumes that *data* = [*x₀*, *x₁*, *x₂*, …].
 
+If an **interval** is specified, such as d3.utcDay, **y** is transformed to (*interval*.floor(*y*) + *interval*.offset(*interval*.floor(*y*))) / 2. If the interval is specified as a number *n*, *y* will be the midpoint of two consecutive multiples of *n* that bracket *y*.
+
 #### Plot.dotY(*data*, *options*)
 
 ```js
@@ -894,6 +1094,24 @@ Plot.dotY(cars.map(d => d["economy (mpg)"]))
 ```
 
 Equivalent to [Plot.dot](#plotdotdata-options) except that if the **y** option is not specified, it defaults to the identity function and assumes that *data* = [*y₀*, *y₁*, *y₂*, …].
+
+If an **interval** is specified, such as d3.utcDay, **x** is transformed to (*interval*.floor(*x*) + *interval*.offset(*interval*.floor(*x*))) / 2. If the interval is specified as a number *n*, *x* will be the midpoint of two consecutive multiples of *n* that bracket *x*.
+
+#### Plot.circle(*data*, *options*)
+
+Equivalent to [Plot.dot](#plotdotdata-options) except that the **symbol** option is set to *circle*.
+
+#### Plot.hexagon(*data*, *options*)
+
+Equivalent to [Plot.dot](#plotdotdata-options) except that the **symbol** option is set to *hexagon*.
+
+### Hexgrid
+
+The hexgrid mark can be used to support marks using the [hexbin](#hexbin) layout.
+
+#### Plot.hexgrid([*options*])
+
+The **binWidth** option specifies the distance between the centers of neighboring hexagons, in pixels (defaults to 20). The **clip** option defaults to true, clipping the mark to the frame’s dimensions.
 
 ### Image
 
@@ -914,7 +1132,7 @@ The **width** and **height** options default to 16 pixels and can be specified a
 
 The following image-specific constant options are also supported:
 
-* **frameAnchor** - the frame anchor; top-left, top, top-right, right, bottom-right, bottom, bottom-left, left, or middle (default)
+* **frameAnchor** - the [frame anchor](#frameanchor); defaults to *middle*
 * **preserveAspectRatio** - the [aspect ratio](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAspectRatio); defaults to “xMidYMid meet”
 * **crossOrigin** - the [cross-origin](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/crossorigin) behavior
 
@@ -929,6 +1147,39 @@ Plot.image(presidents, {x: "inauguration", y: "favorability", src: "portrait"})
 ```
 
 Returns a new image with the given *data* and *options*. If neither the **x** nor **y** nor **frameAnchor** options are specified, *data* is assumed to be an array of pairs [[*x₀*, *y₀*], [*x₁*, *y₁*], [*x₂*, *y₂*], …] such that **x** = [*x₀*, *x₁*, *x₂*, …] and **y** = [*y₀*, *y₁*, *y₂*, …].
+
+
+### Linear regression
+
+[<img src="./img/linear-regression.png" width="320" height="200" alt="a scatterplot of penguin culmens, showing the length and depth of several species, with linear regression models by species and for the whole population, illustrating Simpson’s paradox">](https://observablehq.com/@observablehq/plot-linear-regression)
+
+[Source](./src/marks/linearRegression.js) · [Examples](https://observablehq.com/@observablehq/plot-linear-regression) · Draws [linear regression](https://en.wikipedia.org/wiki/Linear_regression) lines with confidence bands, representing the estimated relation of a dependent variable (typically *y*) on an independent variable (typically *x*). The linear regression line is fit using the [least squares](https://en.wikipedia.org/wiki/Least_squares) approach. See Torben Jansen’s [“Linear regression with confidence bands”](https://observablehq.com/@toja/linear-regression-with-confidence-bands) and [this StatExchange question](https://stats.stackexchange.com/questions/101318/understanding-shape-and-calculation-of-confidence-bands-in-linear-regression) for details on the confidence interval calculation.
+
+The given *options* are passed through to these underlying marks, with the exception of the following options:
+
+* **stroke** - the stroke color of the regression line; defaults to *currentColor*
+* **fill** - the fill color of the confidence band; defaults to the line’s *stroke*
+* **fillOpacity** - the fill opacity of the confidence band; defaults to 0.1
+* **ci** - the confidence interval in [0, 1), or 0 to hide bands; defaults to 0.95
+* **precision** - the distance (in pixels) between samples of the confidence band; defaults to 4
+
+Multiple regressions can be defined by specifying the *z*, *fill*, or *stroke* channel.
+
+#### Plot.linearRegressionX(*data*, *options*)
+
+```js
+Plot.linearRegressionX(mtcars, {y: "wt", x: "hp"})
+```
+
+Returns a linear regression mark where *x* is the dependent variable and *y* is the independent variable.
+
+#### Plot.linearRegressionY(*data*, *options*)
+
+```js
+Plot.linearRegressionY(mtcars, {x: "wt", y: "hp"})
+```
+
+Returns a linear regression mark where *y* is the dependent variable and *x* is the independent variable.
 
 ### Line
 
@@ -951,7 +1202,7 @@ The **fill** defaults to none. The **stroke** defaults to currentColor if the fi
 
 Points along the line are connected in input order. Likewise, if there are multiple series via the *z*, *fill*, or *stroke* channel, the series are drawn in input order such that the last series is drawn on top. Typically, the data is already in sorted order, such as chronological for time series; if sorting is needed, consider a [sort transform](#transforms).
 
-The line mark supports [curve options](#curves) to control interpolation between points, and [marker options](#markers) to add a marker (such as a dot or an arrowhead) on each of the control points. If any of the *x* or *y* values are invalid (undefined, null, or NaN), the line will be interrupted, resulting in a break that divides the line shape into multiple segments. (See [d3-shape’s *line*.defined](https://github.com/d3/d3-shape/blob/master/README.md#line_defined) for more.) If a line segment consists of only a single point, it may appear invisible unless rendered with rounded or square line caps. In addition, some curves such as *cardinal-open* only render a visible segment if it contains multiple points.
+The line mark supports [curve options](#curves) to control interpolation between points, and [marker options](#markers) to add a marker (such as a dot or an arrowhead) on each of the control points. If any of the *x* or *y* values are invalid (undefined, null, or NaN), the line will be interrupted, resulting in a break that divides the line shape into multiple segments. (See [d3-shape’s *line*.defined](https://github.com/d3/d3-shape/blob/main/README.md#line_defined) for more.) If a line segment consists of only a single point, it may appear invisible unless rendered with rounded or square line caps. In addition, some curves such as *cardinal-open* only render a visible segment if it contains multiple points.
 
 #### Plot.line(*data*, *options*)
 
@@ -967,7 +1218,15 @@ Returns a new line with the given *data* and *options*. If neither the **x** nor
 Plot.lineX(aapl.map(d => d.Close))
 ```
 
-Equivalent to [Plot.line](#plotlinedata-options) except that if the **x** option is not specified, it defaults to the identity function and assumes that *data* = [*x₀*, *x₁*, *x₂*, …]. If the **y** option is not specified, it defaults to [0, 1, 2, …].
+Similar to [Plot.line](#plotlinedata-options) except that if the **x** option is not specified, it defaults to the identity function and assumes that *data* = [*x₀*, *x₁*, *x₂*, …]. If the **y** option is not specified, it defaults to [0, 1, 2, …].
+
+If the **interval** option is specified, the [binY transform](#bin) is implicitly applied to the specified *options*. The reducer of the output *x* channel may be specified via the **reduce** option, which defaults to *first*. To default to zero instead of showing gaps in data, as when the observed value represents a quantity, use the *sum* reducer.
+
+```js
+Plot.lineX(observations, {y: "date", x: "temperature", interval: d3.utcDay})
+```
+
+The **interval** option is recommended to “regularize” sampled data; for example, if your data represents timestamped temperature measurements and you expect one sample per day, use d3.utcDay as the interval.
 
 #### Plot.lineY(*data*, *options*)
 
@@ -975,7 +1234,15 @@ Equivalent to [Plot.line](#plotlinedata-options) except that if the **x** option
 Plot.lineY(aapl.map(d => d.Close))
 ```
 
-Equivalent to [Plot.line](#plotlinedata-options) except that if the **y** option is not specified, it defaults to the identity function and assumes that *data* = [*y₀*, *y₁*, *y₂*, …]. If the **x** option is not specified, it defaults to [0, 1, 2, …].
+Similar to [Plot.line](#plotlinedata-options) except that if the **y** option is not specified, it defaults to the identity function and assumes that *data* = [*y₀*, *y₁*, *y₂*, …]. If the **x** option is not specified, it defaults to [0, 1, 2, …].
+
+If the **interval** option is specified, the [binX transform](#bin) is implicitly applied to the specified *options*. The reducer of the output *y* channel may be specified via the **reduce** option, which defaults to *first*. To default to zero instead of showing gaps in data, as when the observed value represents a quantity, use the *sum* reducer.
+
+```js
+Plot.lineY(observations, {x: "date", y: "temperature", interval: d3.utcDay})
+```
+
+The **interval** option is recommended to “regularize” sampled data; for example, if your data represents timestamped temperature measurements and you expect one sample per day, use d3.utcDay as the interval.
 
 ### Link
 
@@ -1126,7 +1393,7 @@ The following text-specific constant options are also supported:
 * **fontStyle** - the [font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style); defaults to normal
 * **fontVariant** - the [font variant](https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant); defaults to normal
 * **fontWeight** - the [font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight); defaults to normal
-* **frameAnchor** - the frame anchor; top-left, top, top-right, right, bottom-right, bottom, bottom-left, left, or middle (default)
+* **frameAnchor** - the [frame anchor](#frameanchor); defaults to *middle*
 * **rotate** - the rotation angle in degrees clockwise; defaults to 0
 
 If a **lineWidth** is specified, input text values will be wrapped as needed to fit while preserving existing newlines. The line wrapping implementation is rudimentary; for non-ASCII, non-U.S. English text, or for when a different font is used, you may get better results by hard-wrapping the text yourself (by supplying newlines in the input). If the **monospace** option is truthy, the default **fontFamily** changes to “ui-monospace, monospace”, and the **lineWidth** option is interpreted as characters (ch) rather than ems.
@@ -1145,9 +1412,13 @@ Returns a new text mark with the given *data* and *options*. If neither the **x*
 
 Equivalent to [Plot.text](#plottextdata-options), except **x** defaults to the identity function and assumes that *data* = [*x₀*, *x₁*, *x₂*, …].
 
+If an **interval** is specified, such as d3.utcDay, **y** is transformed to (*interval*.floor(*y*) + *interval*.offset(*interval*.floor(*y*))) / 2. If the interval is specified as a number *n*, *y* will be the midpoint of two consecutive multiples of *n* that bracket *y*.
+
 #### Plot.textY(*data*, *options*)
 
 Equivalent to [Plot.text](#plottextdata-options), except **y** defaults to the identity function and assumes that *data* = [*y₀*, *y₁*, *y₂*, …].
+
+If an **interval** is specified, such as d3.utcDay, **x** is transformed to (*interval*.floor(*x*) + *interval*.offset(*interval*.floor(*x*))) / 2. If the interval is specified as a number *n*, *x* will be the midpoint of two consecutive multiples of *n* that bracket *x*.
 
 ### Tick
 
@@ -1207,7 +1478,7 @@ If either of the **x** or **y** channels are not specified, the corresponding po
 The following options are also supported:
 
 * **anchor** - one of *start*, *middle*, or *end*; defaults to *middle*
-* **frameAnchor** - the frame anchor; top-left, top, top-right, right, bottom-right, bottom, bottom-left, left, or middle (default)
+* **frameAnchor** - the [frame anchor](#frameanchor); defaults to *middle*
 
 If the **anchor** is *start*, the arrow will start at the given *xy* position and point in the direction given by the rotation angle. If the **anchor** is *end*, the arrow will maintain the same orientation, but be positioned such that it ends in the given *xy* position. If the **anchor** is *middle*, the arrow will be likewise be positioned such that its midpoint intersects the given *xy* position.
 
@@ -1226,6 +1497,14 @@ Plot.vector(wind, {x: "longitude", y: "latitude", length: "speed", rotate: "dire
 ```
 
 Returns a new vector with the given *data* and *options*. If neither the **x** nor **y** options are specified, *data* is assumed to be an array of pairs [[*x₀*, *y₀*], [*x₁*, *y₁*], [*x₂*, *y₂*], …] such that **x** = [*x₀*, *x₁*, *x₂*, …] and **y** = [*y₀*, *y₁*, *y₂*, …].
+
+#### Plot.vectorX(*data*, *options*)
+
+Equivalent to Plot.vector except that if the **x** option is not specified, it defaults to the identity function and assumes that *data* = [*x₀*, *x₁*, *x₂*, …].
+
+#### Plot.vectorY(*data*, *options*)
+
+Equivalent to Plot.vector except that if the **y** option is not specified, it defaults to the identity function and assumes that *data* = [*y₀*, *y₁*, *y₂*, …].
 
 ## Interactions
 
@@ -1269,7 +1548,7 @@ Decorations are static marks that do not represent data. Currently this includes
 
 [Source](./src/marks/frame.js) · [Examples](https://observablehq.com/@observablehq/plot-frame) · Draws a simple frame around the entire plot (or facet).
 
-The frame mark supports the [standard mark options](#marks), but does not accept any data or support channels. The default **stroke** is currentColor, and the default **fill** is none.
+The frame mark supports the [standard mark options](#marks), and the **rx** and **ry** options to set the [*x* radius](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/rx) and [*y* radius](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/ry) for rounded corners. It does not accept any data or support channels. The default **stroke** is currentColor, and the default **fill** is none.
 
 #### Plot.frame(*options*)
 
@@ -1299,9 +1578,21 @@ The **filter** transform is similar to filtering the data with [*array*.filter](
 Plot.barY(alphabet.filter(d => /[aeiou]/i.test(d.letter)), {x: "letter", y: "frequency"})
 ```
 
-Together the **sort** and **reverse** transforms allow control over *z*-order, which can be important when addressing overplotting. If the sort option is a function but does not take exactly one argument, it is assumed to be a [comparator function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#description); otherwise, the sort option is interpreted as a channel value definition and thus may be either as a column name, accessor function, or array of values.
+Together the **sort** and **reverse** transforms allow control over *z* order, which can be important when addressing overplotting. If the sort option is a function but does not take exactly one argument, it is assumed to be a [comparator function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#description); otherwise, the sort option is interpreted as a channel value definition and thus may be either as a column name, accessor function, or array of values.
 
-For greater control, you can also implement a custom transform function:
+The sort transform can also be used to sort on channel values, including those derived by [initializers](#initializers). For example, to sort dots by descending radius:
+
+```js
+Plot.dot(earthquakes, {x: "longitude", y: "latitude", r: "intensity", sort: {channel: "r", order: "descending}})
+```
+
+In fact, sorting by descending radius is the default behavior of the dot mark when an *r* channel is specified. You can disable this by setting the sort explicitly to null:
+
+```js
+Plot.dot(earthquakes, {x: "longitude", y: "latitude", r: "intensity", sort: null})
+```
+
+For greater control, you can also implement a [custom transform function](#custom-transforms):
 
 * **transform** - a function that returns transformed *data* and *index*
 
@@ -1309,7 +1600,7 @@ The basic transforms are composable: the *filter* transform is applied first, th
 
 Plot’s option transforms, listed below, do more than populate the **transform** function: they derive new mark options and channels. These transforms take a mark’s *options* object (and possibly transform-specific options as the first argument) and return a new, transformed, *options*. Option transforms are composable: you can pass an *options* objects through more than one transform before passing it to a mark. You can also reuse the same transformed *options* on multiple marks.
 
-The *filter*, *sort* and *reverse* transforms are also available as functions, allowing the order of operations to be specified explicitly. For example, sorting before binning results in sorted data inside bins, whereas sorting after binning results affects the *z*-order of rendered marks.
+The *filter*, *sort* and *reverse* transforms are also available as functions, allowing the order of operations to be specified explicitly. For example, sorting before binning results in sorted data inside bins, whereas sorting after binning results affects the *z* order of rendered marks.
 
 #### Plot.sort(*order*, *options*)
 
@@ -1317,7 +1608,7 @@ The *filter*, *sort* and *reverse* transforms are also available as functions, a
 Plot.sort("body_mass_g", options) // show data in ascending body mass order
 ```
 
-Sorts the data by the specified *order*, which can be an accessor function, a comparator function, or a channel value definition such as a field name.
+Sorts the data by the specified *order*, which can be an accessor function, a comparator function, or a channel value definition such as a field name. See also [index sorting](#index-sorting), which allows marks to be sorted by a named channel, such as *r* for radius.
 
 #### Plot.shuffle(*options*)
 
@@ -1390,16 +1681,16 @@ The following aggregation methods are supported:
 * *pXX* - the percentile value, where XX is a number in [00,99]
 * *deviation* - the standard deviation
 * *variance* - the variance per [Welford’s algorithm](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm)
-* *x* - the middle the bin’s *x*-extent (when binning on *x*)
-* *x1* - the lower bound of the bin’s *x*-extent (when binning on *x*)
-* *x2* - the upper bound of the bin’s *x*-extent (when binning on *x*)
-* *y* - the middle the bin’s *y*-extent (when binning on *y*)
-* *y1* - the lower bound of the bin’s *y*-extent (when binning on *y*)
-* *y2* - the upper bound of the bin’s *y*-extent (when binning on *y*)
+* *x* - the middle of the bin’s *x* extent (when binning on *x*)
+* *x1* - the lower bound of the bin’s *x* extent (when binning on *x*)
+* *x2* - the upper bound of the bin’s *x* extent (when binning on *x*)
+* *y* - the middle of the bin’s *y* extent (when binning on *y*)
+* *y1* - the lower bound of the bin’s *y* extent (when binning on *y*)
+* *y2* - the upper bound of the bin’s *y* extent (when binning on *y*)
 * a function to be passed the array of values for each bin and the extent of the bin
-* an object with a *reduce* method
+* an object with a *reduce* method, and optionally a *scope*
 
-The *reduce* method is repeatedly passed the index for each bin (an array of integers), the corresponding input channel’s array of values, and the extent of the bin; it must then return the corresponding aggregate value for the bin.
+In the last case, the *reduce* method is repeatedly passed three arguments: the index for each bin (an array of integers), the input channel’s array of values, and the extent of the bin (an object {x1, x2, y1, y2}); it must then return the corresponding aggregate value for the bin. If the reducer object’s *scope* is “data”, then the *reduce* method is first invoked for the full data; the return value of the *reduce* method is then made available as a third argument (making the extent the fourth argument). Similarly if the *scope* is “facet”, then the *reduce* method is invoked for each facet, and the resulting reduce value is made available while reducing the facet’s bins. (This optional *scope* is used by the *proportion* and *proportion-facet* reducers.)
 
 Most aggregation methods require binding the output channel to an input channel; for example, if you want the **y** output channel to be a *sum* (not merely a count), there should be a corresponding **y** input channel specifying which values to sum. If there is not, *sum* will be equivalent to *count*.
 
@@ -1451,7 +1742,7 @@ The **thresholds** option may be specified as a named method or a variety of oth
 * an interval or time interval (for temporal binning; see below)
 * a function that returns an array, count, or time interval
 
-If the **thresholds** option is specified as a function, it is passed three arguments: the array of input values, the domain minimum, and the domain maximum. If a number, [d3.ticks](https://github.com/d3/d3-array/blob/main/README.md#ticks) or [d3.utcTicks](https://github.com/d3/d3-time/blob/master/README.md#ticks) is used to choose suitable nice thresholds. If an interval, it must expose an *interval*.floor(*value*), *interval*.ceil(*value*), *interval*.offset(*value*), and *interval*.range(*start*, *stop*) methods. If the interval is a time interval such as d3.utcDay, or if the thresholds are specified as an array of dates, then the binned values are implicitly coerced to dates. Time intervals are intervals that are also functions that return a Date instance when called with no arguments.
+If the **thresholds** option is specified as a function, it is passed three arguments: the array of input values, the domain minimum, and the domain maximum. If a number, [d3.ticks](https://github.com/d3/d3-array/blob/main/README.md#ticks) or [d3.utcTicks](https://github.com/d3/d3-time/blob/main/README.md#ticks) is used to choose suitable nice thresholds. If an interval, it must expose an *interval*.floor(*value*), *interval*.ceil(*value*), *interval*.offset(*value*), and *interval*.range(*start*, *stop*) methods. If the interval is a time interval such as d3.utcDay, or if the thresholds are specified as an array of dates, then the binned values are implicitly coerced to dates. Time intervals are intervals that are also functions that return a Date instance when called with no arguments.
 
 If the **interval** option is used instead of **thresholds**, it may be either an interval, a time interval, or a number. If a number *n*, threshold values are consecutive multiples of *n* that span the domain; otherwise, the **interval** option is equivalent to the **thresholds** option. When the thresholds are specified as an interval, and the default **domain** is used, the domain will automatically be extended to start and end to align with the interval.
 
@@ -1529,7 +1820,9 @@ The following aggregation methods are supported:
 * *deviation* - the standard deviation
 * *variance* - the variance per [Welford’s algorithm](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm)
 * a function - passed the array of values for each group
-* an object with a *reduce* method - passed the index for each group, and all values
+* an object with a *reduce* method, an optionally a *scope*
+
+In the last case, the *reduce* method is repeatedly passed two arguments: the index for each group (an array of integers), and the input channel’s array of values; it must then return the corresponding aggregate value for the group. If the reducer object’s *scope* is “data”, then the *reduce* method is first invoked for the full data; the return value of the *reduce* method is then made available as a third argument. Similarly if the *scope* is “facet”, then the *reduce* method is invoked for each facet, and the resulting reduce value is made available while reducing the facet’s groups. (This optional *scope* is used by the *proportion* and *proportion-facet* reducers.)
 
 Most aggregation methods require binding the output channel to an input channel; for example, if you want the **y** output channel to be a *sum* (not merely a count), there should be a corresponding **y** input channel specifying which values to sum. If there is not, *sum* will be equivalent to *count*.
 
@@ -1805,9 +2098,10 @@ The following **order** methods are supported:
 - *sum* - order series by their total value
 - *appearance* - order series by the position of their maximum value
 - *inside-out* - order the earliest-appearing series on the inside
+- a named field or function of data - order data by priority
 - an array of *z* values
 
-The **reverse** option reverses the effective order. For the *value* order, Plot.stackY uses the *y*-value while Plot.stackX uses the *x*-value. For the *appearance* order, Plot.stackY uses the *x*-position of the maximum *y*-value while Plot.stackX uses the *y*-position of the maximum *x*-value. If an array of *z* values are specified, they should enumerate the *z* values for all series in the desired order; this array is typically hard-coded or computed with [d3.groupSort](https://github.com/d3/d3-array/blob/main/README.md#groupSort). Note that the input order (null) and *value* order can produce crossing paths: unlike the other order methods, they do not guarantee a consistent series order across stacks.
+The **reverse** option reverses the effective order. For the *value* order, Plot.stackY uses the *y* value while Plot.stackX uses the *x* value. For the *appearance* order, Plot.stackY uses the *x* position of the maximum *y* value while Plot.stackX uses the *y* position of the maximum *x* value. If an array of *z* values are specified, they should enumerate the *z* values for all series in the desired order; this array is typically hard-coded or computed with [d3.groupSort](https://github.com/d3/d3-array/blob/main/README.md#groupSort). Note that the input order (null) and *value* order can produce crossing paths: they do not guarantee a consistent series order across stacks.
 
 The stack transform supports diverging stacks: negative values are stacked below zero while positive values are stacked above zero. For Plot.stackY, the **y1** channel contains the value of lesser magnitude (closer to zero) while the **y2** channel contains the value of greater magnitude (farther from zero); the difference between the two corresponds to the input **y** channel value. For Plot.stackX, the same is true, except for **x1**, **x2**, and **x** respectively.
 
@@ -1817,14 +2111,17 @@ After all values have been stacked from zero, an optional **offset** can be appl
 - *expand* (or *normalize*) - rescale each stack to fill [0, 1]
 - *center* (or *silhouette*) - align the centers of all stacks
 - *wiggle* - translate stacks to minimize apparent movement
+- a function to be passed a nested index, and start, end, and *z* values
 
 If a given stack has zero total value, the *expand* offset will not adjust the stack’s position. Both the *center* and *wiggle* offsets ensure that the lowest element across stacks starts at zero for better default axes. The *wiggle* offset is recommended for streamgraphs, and if used, changes the default order to *inside-out*; see [Byron & Wattenberg](http://leebyron.com/streamgraph/).
+
+If the offset is specified as a function, it will receive four arguments: an index of stacks nested by facet and then stack, an array of start values, an array of end values, and an array of *z* values. For stackX, the start and end values correspond to *x1* and *x2*, while for stackY, the start and end values correspond to *y1* and *y2*. The offset function is then responsible for mutating the arrays of start and end values, such as by subtracting a common offset for each of the indices that pertain to the same stack.
 
 In addition to the **y1** and **y2** output channels, Plot.stackY computes a **y** output channel that represents the midpoint of **y1** and **y2**. Plot.stackX does the same for **x**. This can be used to position a label or a dot in the center of a stacked layer. The **x** and **y** output channels are lazy: they are only computed if needed by a downstream mark or transform.
 
 If two arguments are passed to the stack transform functions below, the stack-specific options (**offset**, **order**, and **reverse**) are pulled exclusively from the first *options* argument, while any channels (*e.g.*, **x**, **y**, and **z**) are pulled from second *options* argument. Options from the second argument that are not consumed by the stack transform will be passed through. Using two arguments is sometimes necessary is disambiguate the option recipient when chaining transforms.
 
-#### Plot.stackY(*stack*, *options*)
+#### Plot.stackY([*stack*, ]*options*)
 
 ```js
 Plot.stackY({x: "year", y: "revenue", z: "format", fill: "group"})
@@ -1832,7 +2129,7 @@ Plot.stackY({x: "year", y: "revenue", z: "format", fill: "group"})
 
 Creates new channels **y1** and **y2**, obtained by stacking the original **y** channel for data points that share a common **x** (and possibly **z**) value. A new **y** channel is also returned, which lazily computes the middle value of **y1** and **y2**. The input **y** channel defaults to a constant 1, resulting in a count of the data points. The stack options (*offset*, *order*, and *reverse*) may be specified as part of the *options* object, if the only argument, or as a separate *stack* options argument.
 
-#### Plot.stackY1(*stack*, *options*)
+#### Plot.stackY1([*stack*, ]*options*)
 
 ```js
 Plot.stackY1({x: "year", y: "revenue", z: "format", fill: "group"})
@@ -1840,7 +2137,7 @@ Plot.stackY1({x: "year", y: "revenue", z: "format", fill: "group"})
 
 Equivalent to [Plot.stackY](#plotstackystack-options), except that the **y1** channel is returned as the **y** channel. This can be used, for example, to draw a line at the bottom of each stacked area.
 
-#### Plot.stackY2(*stack*, *options*)
+#### Plot.stackY2([*stack*, ]*options*)
 
 ```js
 Plot.stackY2({x: "year", y: "revenue", z: "format", fill: "group"})
@@ -1848,7 +2145,7 @@ Plot.stackY2({x: "year", y: "revenue", z: "format", fill: "group"})
 
 Equivalent to [Plot.stackY](#plotstackystack-options), except that the **y2** channel is returned as the **y** channel. This can be used, for example, to draw a line at the top of each stacked area.
 
-#### Plot.stackX(*stack*, *options*)
+#### Plot.stackX([*stack*, ]*options*)
 
 ```js
 Plot.stackX({y: "year", x: "revenue", z: "format", fill: "group"})
@@ -1856,7 +2153,7 @@ Plot.stackX({y: "year", x: "revenue", z: "format", fill: "group"})
 
 See Plot.stackY, but with *x* as the input value channel, *y* as the stack index, *x1*, *x2* and *x* as the output channels.
 
-#### Plot.stackX1(*stack*, *options*)
+#### Plot.stackX1([*stack*, ]*options*)
 
 ```js
 Plot.stackX1({y: "year", x: "revenue", z: "format", fill: "group"})
@@ -1864,7 +2161,7 @@ Plot.stackX1({y: "year", x: "revenue", z: "format", fill: "group"})
 
 Equivalent to [Plot.stackX](#plotstackxstack-options), except that the **x1** channel is returned as the **x** channel. This can be used, for example, to draw a line at the left edge of each stacked area.
 
-#### Plot.stackX2(*stack*, *options*)
+#### Plot.stackX2([*stack*, ]*options*)
 
 ```js
 Plot.stackX2({y: "year", x: "revenue", z: "format", fill: "group"})
@@ -1872,9 +2169,233 @@ Plot.stackX2({y: "year", x: "revenue", z: "format", fill: "group"})
 
 Equivalent to [Plot.stackX](#plotstackxstack-options), except that the **x2** channel is returned as the **x** channel. This can be used, for example, to draw a line at the right edge of each stacked area.
 
+### Tree
+
+[<img src="./img/tree.png" width="320" height="250" alt="a node-link tree diagram representing a software hierarchy">](https://observablehq.com/@observablehq/plot-tree)
+
+[Source](./src/transforms/tree.js) · [Examples](https://observablehq.com/@observablehq/plot-tree) · Transforms a tabular dataset into a hierarchy according to the given **path** input channel, which is typically a slash-separated string; then executes a tree layout algorithm to compute **x** and **y** output channels; these channels can then be fed to other marks to construct a node-link diagram.
+
+The following options control how the tabular data is organized into a hierarchy:
+
+* **path** - a column specifying each node’s hierarchy location; defaults to identity
+* **delimiter** - the path separator; defaults to forward slash (/)
+
+The **path** column is typically slash-separated, as with UNIX-based file systems or URLs. For example, given the following hierarchy:
+
+```
+└─ Total
+   ├─ Fossil Fuels
+   │  ├─ Coal
+   │  ├─ Natural Gas
+   │  └─ Crude Oil
+   ├─ Nuclear
+   └─ Renewable
+      ├─ Biomass
+      ├─ Geothermal
+      ├─ Hydroelectric
+      ├─ Solar
+      └─ Wind
+```
+
+You might use the following path strings:
+
+```
+/Total
+/Total/Fossil Fuels
+/Total/Fossil Fuels/Coal
+/Total/Fossil Fuels/Natural Gas
+/Total/Fossil Fuels/Crude Oil
+/Total/Nuclear
+/Total/Renewable
+/Total/Renewable/Biomass
+/Total/Renewable/Geothermal
+/Total/Renewable/Hydroelectric
+/Total/Renewable/Solar
+/Total/Renewable/Wind
+```
+
+The following options control how the node-link diagram is laid out:
+
+* **treeLayout** - a tree layout algorithm; defaults to [d3.tree](https://github.com/d3/d3-hierarchy/blob/main/README.md#tree)
+* **treeAnchor** - a tree layout orientation, either *left* or *right*; defaults to *left*
+* **treeSort** - a node comparator, or null to preserve input order
+* **treeSeparation** - a node separation function, or null for uniform separation
+
+The default **treeLayout** implements the Reingold–Tilford “tidy” algorithm based on Buchheim _et al._’s linear time approach. Use [d3.cluster](https://github.com/d3/d3-hierarchy/blob/main/README.md#cluster) instead to align leaf nodes; see also [Plot.cluster](#plotclusterdata-options). If the **treeAnchor** is *left*, the root of the tree will be aligned with the left side of the frame; if **treeAnchor** is *right*, the root of the tree will be aligned with the right side of the frame; use the **insetLeft** and **insetRight** [scale options](#scale-options) if horizontal padding is desired, say to make room for labels.  If the **treeSort** option is not null, it is typically a function that is passed two nodes in the hierarchy and compares them, similar to [_array_.sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort); see [d3-hierarchy’s _node_.sort](https://github.com/d3/d3-hierarchy/blob/main/README.md#node_sort) for more. The **treeSort** option can also be specified as a string, in which case it refers either to a named column in data, or if it starts with “node:”, a node value (see below). If the **treeSeparation** is not null, it is a function that is passed two nodes in the hierarchy and returns the desired (relative) amount of separation; see [d3-hierarchy’s _tree_.separation](https://github.com/d3/d3-hierarchy/blob/main/README.md#tree_separation) for more. By default, non-siblings are at least twice as far apart as siblings.
+
+#### Plot.treeNode(*options*)
+
+Based on the tree options described above, populates the **x** and **y** channels with the positions for each node. The following defaults are also applied: the default **frameAnchor** inherits the **treeAnchor**. This transform is intended to be used with [dot](#dot), [text](#text), and other point-based marks. This transform is rarely used directly; see the [Plot.tree compound mark](#plottreedata-options).
+
+The treeNode transform will derive output columns for any *options* that have one of the following named node values:
+
+* *node:name* - the node’s name (the last part of its path)
+* *node:path* - the node’s full, normalized, slash-separated path
+* *node:internal* - true if the node is internal, or false for leaves
+* *node:depth* - the distance from the node to the root
+* *node:height* - the distance from the node to its deepest descendant
+
+In addition, if any option value is specified as an object with a **node** method, a derived output column will be generated by invoking the **node** method for each node in the tree.
+
+#### Plot.treeLink(*options*)
+
+Based on the tree options described above, populates the **x1**, **y1**, **x2**, and **y2** channels. The following defaults are also applied: the default **curve** is *bump-x*, the default **stroke** is #555, the default **strokeWidth** is 1.5, and the default **strokeOpacity** is 0.5. This transform is intended to be used with [link](#link), [arrow](#arrow), and other two-point-based marks. This transform is rarely used directly; see the [Plot.tree compound mark](#plottreedata-options).
+
+The treeLink transform will derive output columns for any *options* that have one of the following named link values:
+
+* *node:name* - the child node’s name (the last part of its path)
+* *node:path* - the child node’s full, normalized, slash-separated path
+* *node:internal* - true if the child node is internal, or false for leaves
+* *node:depth* - the distance from the child node to the root
+* *node:height* - the distance from the child node to its deepest descendant
+* *parent:name* - the parent node’s name (the last part of its path)
+* *parent:path* - the parent node’s full, normalized, slash-separated path
+* *parent:depth* - the distance from the parent node to the root
+* *parent:height* - the distance from the parent node to its deepest descendant
+
+In addition, if any option value is specified as an object with a **node** method, a derived output column will be generated by invoking the **node** method for each child node in the tree; likewise if any option value is specified as an object with a **link** method, a derived output column will be generated by invoking the **link** method for each link in the tree, being passed two node arguments, the child and the parent.
+
+#### Plot.tree(*data*, *options*)
+
+A convenience compound mark for rendering a tree diagram, including a [link](#link) to render links from parent to child, an optional [dot](#dot) for nodes, and a [text](#text) for node labels. The link mark uses the [treeLink transform](#plottreelinkoptions), while the dot and text marks use the [treeNode transform](#plottreenodeoptions). The following options are supported:
+
+* **fill** - the dot and text fill color; defaults to *node:internal*
+* **stroke** - the link stroke color; inherits **fill** by default
+* **strokeWidth** - the link stroke width
+* **strokeOpacity** - the link stroke opacity
+* **strokeLinejoin** - the link stroke linejoin
+* **strokeLinecap** - the link stroke linecap
+* **strokeMiterlimit** - the link stroke miter limit
+* **strokeDasharray** - the link stroke dash array
+* **strokeDashoffset** - the link stroke dash offset
+* **marker** - the link start and end marker
+* **markerStart** - the link start marker
+* **markerEnd** - the link end marker
+* **dot** - if true, whether to render a dot; defaults to false if no link marker
+* **title** - the text and dot title; defaults to *node:path*
+* **text** - the text label; defaults to *node:name*
+* **textStroke** - the text stroke; defaults to *white*
+* **dx** - the text horizontal offset; defaults to 6 if left-anchored, or -6 if right-anchored
+* **dy** - the text vertical offset; defaults to 0
+
+Any additional *options* are passed through to the constituent link, dot, and text marks and their corresponding treeLink or treeNode transform.
+
+#### Plot.cluster(*data*, *options*)
+
+Like Plot.tree, except sets the **treeLayout** option to D3’s cluster (dendrogram) algorithm, which aligns leaf nodes.
+
+### Custom transforms
+
+The **transform** option defines a custom transform function, allowing data, indexes, or channels to be derived prior to rendering. Custom transforms are rarely implemented directly; see the built-in transforms above. The transform function (if present) is passed two arguments, *data* and *facets*, representing the mark’s data and facet indexes; it must then return a {data, facets} object representing the resulting transformed data and facet indexes. The *facets* are represented as a nested array of arrays such as [[0, 1, 3, …], [2, 5, 10, …], …]; each element in *facets* specifies the zero-based indexes of elements in *data* that are in a given facet (*i.e.*, have a distinct value in the associated *fx* or *fy* dimension).
+
+While transform functions often produce new *data* or *facets*, they may return the passed-in *data* and *facets* as-is, and often have a side-effect of constructing derived channels. For example, the count of elements in a [groupX transform](#group) might be returned as a new *y* channel. In this case, the transform is typically expressed as an options transform: a function that takes a mark options object and returns a new, transformed options object, where the returned options object implements a *transform* function option. Transform functions should not mutate the input *data* or *facets*. Likewise options transforms should not mutate the input *options* object.
+
+Plot provides a few helpers for implementing transforms.
+
+#### Plot.valueof(*data*, *value*, *type*)
+
+Given an iterable *data* and some *value* accessor, returns an array (a column) of the specified *type* with the corresponding value of each element of the data. The *value* accessor may be one of the following types:
+
+* a string - corresponding to the field accessor (`d => d[value]`)
+* an accessor function - called as *type*.from(*data*, *value*)
+* a number, Date, or boolean — resulting in an array uniformly filled with the *value*
+* an object with a transform method — called as *value*.transform(*data*)
+* an array of values - returning the same
+* null or undefined - returning the same
+
+If *type* is specified, it must be Array or a similar class that implements the [Array.from](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/from) interface such as a typed array. When *type* is Array or a typed array class, the return value of valueof will be an instance of the same (or null or undefined). If *type* is not specified, valueof may return either an array or a typed array (or null or undefined).
+
+Plot.valueof is not guaranteed to return a new array. When a transform method is used, or when the given *value* is an array that is compatible with the requested *type*, the array may be returned as-is without making a copy.
+
+#### Plot.transform(*options*, *transform*)
+
+Given an *options* object that may specify some basic transforms (*filter*, *sort*, or *reverse*) or a custom *transform* function, composes those transforms if any with the given *transform* function, returning a new *options* object. If a custom *transform* function is present on the given *options*, any basic transforms are ignored. Any additional input *options* are passed through in the returned *options* object. This method facilitates applying the basic transforms prior to applying the given custom *transform* and is used internally by Plot’s built-in transforms.
+
+#### Plot.column([*source*])
+
+This helper for constructing derived columns returns a [*column*, *setColumn*] array. The *column* object implements *column*.transform, returning whatever value was most recently passed to *setColumn*. If *setColumn* is not called, then *column*.transform returns undefined. If a *source* is specified, then *column*.label exposes the given *source*’s label, if any: if *source* is a string as when representing a named field of data, then *column*.label is *source*; otherwise *column*.label propagates *source*.label. This allows derived columns to propagate a human-readable axis or legend label.
+
+Plot.column is typically used by options transforms to define new channels; the associated columns are populated (derived) when the **transform** option function is invoked.
+
+## Initializers
+
+Initializers can be used to transform and derive new channels prior to rendering. Unlike transforms which operate in abstract data space, initializers can operate in screen space such as pixel coordinates and colors. For example, initializers can modify a marks’ positions to avoid occlusion. Initializers are invoked *after* the initial scales are constructed and can modify the channels or derive new channels; these in turn may (or may not, as desired) be passed to scales.
+
+### Dodge
+
+[<img src="./img/dodge.png" width="320" alt="a chart showing the monthly percent change in travel by U.S. county in March 2020 after the coronavirus outbreak; each county is represented as a circle with area proportional to its population, positioned according to the change in travel; most counties, and especially those with stay-at-home orders, show a significant reduction in travel">](https://observablehq.com/@observablehq/plot-dodge)
+
+[Source](./src/transforms/dodge.js) · [Examples](https://observablehq.com/@observablehq/plot-dodge) · The dodge transform can be applied to any mark that consumes *x* or *y* channels, such as the [dot](#dot), [image](#image), [text](#text), and [vector](#vector) marks. The dodge transforms accept the following options:
+
+* **padding** — a number of pixels added to the radius of the mark to estimate its size
+* **anchor** - the dodge anchor; defaults to *left* for dodgeX, or *bottom* for dodgeY
+
+The **anchor** option may one of *middle*, *right*, and *left* for dodgeX, and one of *middle*, *top*, and *bottom* for dodgeY. With the *middle* anchor the piles will grow from the center in both directions; with the other anchors, the piles will grow from the specified anchor towards the opposite direction.
+
+The dodge layout is highly dependent on the input data order: the circles placed first will be closest to the dodge anchor. When using the dodge layout with circles of varying radius, the data is sorted by descending radius by default; you can disable this behavior by setting the **sort** or **reverse** option.
+
+#### Plot.dodgeY([*dodgeOptions*, ]*options*)
+
+```js
+Plot.dodgeY({x: "date"})
+```
+
+Given marks arranged along the *x* axis, the dodgeY transform piles them vertically by defining a *y* position channel that avoids overlapping. The *x* position channel is unchanged.
+
+#### Plot.dodgeX([*dodgeOptions*, ]*options*)
+
+```js
+Plot.dodgeX({y: "value"})
+```
+
+Equivalent to Plot.dodgeY, but piling horizontally, creating a new *x* position channel that avoids overlapping. The *y* position channel is unchanged.
+
+### Hexbin
+
+[<img src="./img/hexbin.png" width="320" alt="a chart showing the inverse relationship of fuel economy to engine displacement, and the positive correlation of engine displacement and weight; hexagonal bins of varying size represent the number of cars at each location, while color encodes the mean weight of nearby cars">](https://observablehq.com/@observablehq/plot-hexbin)
+
+[Source](./src/transforms/hexbin.js) · [Examples](https://observablehq.com/@observablehq/plot-hexbin) · The hexbin transform can be applied to any mark that consumes *x* and *y*, such as the [dot](#dot), [image](#image), [text](#text), and [vector](#vector) marks. It aggregates values into hexagonal bins of the given **binWidth** (in pixels) and computes new position channels *x* and *y* as the centers of each bin. It can also create new channels by applying a specified reducer to each bin, such as the *count* of elements in the bin.
+
+#### Plot.hexbin(*outputs*, *options*)
+
+Aggregates the given input channels into hexagonal bins, creating output channels with the reduced data. The *options* must specify the **x** and **y** channels. The **binWidth** option (default 20) defines the distance between centers of neighboring hexagons in pixels. If any of **z**, **fill**, or **stroke** is a channel, the first of these channels will be used to subdivide bins. The *outputs* options are similar to the [bin transform](#bin); each output channel receives as input, for each hexagon, the subset of the data which has been matched to its center. The outputs object specifies the aggregation method for each output channel.
+
+The following aggregation methods are supported:
+
+* *first* - the first value, in input order
+* *last* - the last value, in input order
+* *count* - the number of elements (frequency)
+* *distinct* - the number of distinct values
+* *sum* - the sum of values
+* *proportion* - the sum proportional to the overall total (weighted frequency)
+* *proportion-facet* - the sum proportional to the facet total
+* *min* - the minimum value
+* *min-index* - the zero-based index of the minimum value
+* *max* - the maximum value
+* *max-index* - the zero-based index of the maximum value
+* *mean* - the mean value (average)
+* *median* - the median value
+* *deviation* - the standard deviation
+* *variance* - the variance per [Welford’s algorithm](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm)
+* *mode* - the value with the most occurrences
+* a function to be passed the array of values for each bin and the extent of the bin
+* an object with a *reduce* method
+
+See also the [hexgrid](#hexgrid) mark.
+
+### Custom initializers
+
+You can specify a custom initializer by specifying a function as the mark **initializer** option. This function is called after the scales have been computed, and receives as inputs the (possibly transformed) array of *data*, the *facets* index of elements of this array that belong to each facet, the input *channels* (as an object of named channels), the *scales*, and the *dimensions*. The mark itself is the *this* context. The initializer function must return an object with *data*, *facets*, and new *channels*. Any new channels are merged with existing channels, replacing channels of the same name.
+
+If an initializer desires a channel that is not supported by the downstream mark, additional channels can be declared using the mark **channels** option.
+
+#### Plot.initializer(*options*, *initializer*)
+
+This helper composes the *initializer* function with any other transforms present in the *options*, and returns a new *options* object.
+
 ## Curves
 
-A curve defines how to turn a discrete representation of a line as a sequence of points [[*x₀*, *y₀*], [*x₁*, *y₁*], [*x₂*, *y₂*], …] into a continuous path; *i.e.*, how to interpolate between points. Curves are used by the [line](#line), [area](#area), and [link](#link) mark, and are implemented by [d3-shape](https://github.com/d3/d3-shape/blob/master/README.md#curves).
+A curve defines how to turn a discrete representation of a line as a sequence of points [[*x₀*, *y₀*], [*x₁*, *y₁*], [*x₂*, *y₂*], …] into a continuous path; *i.e.*, how to interpolate between points. Curves are used by the [line](#line), [area](#area), and [link](#link) mark, and are implemented by [d3-shape](https://github.com/d3/d3-shape/blob/main/README.md#curves).
 
 The supported curve options are:
 
@@ -1903,9 +2424,9 @@ The following named curve methods are supported:
 * *step-after* - a piecewise constant function where *y* changes after *x*
 * *step-before* - a piecewise constant function where *x* changes after *y*
 
-If *curve* is a function, it will be invoked with a given *context* in the same fashion as a [D3 curve factory](https://github.com/d3/d3-shape/blob/master/README.md#custom-curves).
+If *curve* is a function, it will be invoked with a given *context* in the same fashion as a [D3 curve factory](https://github.com/d3/d3-shape/blob/main/README.md#custom-curves).
 
-The tension option only has an effect on cardinal and Catmull–Rom splines (*cardinal*, *cardinal-open*, *cardinal-closed*, *catmull-rom*, *catmull-rom-open*, and *catmull-rom-closed*). For cardinal splines, it corresponds to [tension](https://github.com/d3/d3-shape/blob/master/README.md#curveCardinal_tension); for Catmull–Rom splines, [alpha](https://github.com/d3/d3-shape/blob/master/README.md#curveCatmullRom_alpha).
+The tension option only has an effect on cardinal and Catmull–Rom splines (*cardinal*, *cardinal-open*, *cardinal-closed*, *catmull-rom*, *catmull-rom-open*, and *catmull-rom-closed*). For cardinal splines, it corresponds to [tension](https://github.com/d3/d3-shape/blob/main/README.md#curveCardinal_tension); for Catmull–Rom splines, [alpha](https://github.com/d3/d3-shape/blob/main/README.md#curveCatmullRom_alpha).
 
 ## Markers
 
@@ -1920,6 +2441,7 @@ The following named markers are supported:
 
 * *none* - no marker (default)
 * *arrow* - an arrowhead
+* *dot* - a filled *circle* without a stroke and 2.5px radius
 * *circle*, equivalent to *circle-fill* - a filled circle with a white stroke and 3px radius
 * *circle-stroke* - a hollow circle with a colored stroke and a white fill and 3px radius
 

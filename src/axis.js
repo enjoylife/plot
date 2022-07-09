@@ -1,7 +1,8 @@
-import {axisTop, axisBottom, axisRight, axisLeft, create, format, utcFormat} from "d3";
-import {boolean, take, number, string, keyword, maybeKeyword, constant, isTemporal} from "./options.js";
+import {axisTop, axisBottom, axisRight, axisLeft, format, utcFormat} from "d3";
+import {create} from "./context.js";
 import {formatIsoDate} from "./format.js";
 import {radians} from "./math.js";
+import {boolean, take, number, string, keyword, maybeKeyword, constant, isTemporal} from "./options.js";
 import {applyAttr, impliedString} from "./style.js";
 
 export class AxisX {
@@ -41,7 +42,6 @@ export class AxisX {
   render(
     index,
     {[this.name]: x, fy},
-    channels,
     {
       width,
       height,
@@ -49,11 +49,13 @@ export class AxisX {
       marginRight,
       marginBottom,
       marginLeft,
+      offsetLeft = 0,
       facetMarginTop,
       facetMarginBottom,
       labelMarginLeft = 0,
       labelMarginRight = 0
-    }
+    },
+    context
   ) {
     const {
       axis,
@@ -69,9 +71,9 @@ export class AxisX {
     const offset = name === "x" ? 0 : axis === "top" ? marginTop - facetMarginTop : marginBottom - facetMarginBottom;
     const offsetSign = axis === "top" ? -1 : 1;
     const ty = offsetSign * offset + (axis === "top" ? marginTop : height - marginBottom);
-    return create("svg:g")
+    return create("svg:g", context)
         .call(applyAria, this)
-        .attr("transform", `translate(0,${ty})`)
+        .attr("transform", `translate(${offsetLeft},${ty})`)
         .call(createAxis(axis === "top" ? axisTop : axisBottom, x, this))
         .call(maybeTickRotate, tickRotate)
         .attr("font-size", null)
@@ -134,7 +136,6 @@ export class AxisY {
   render(
     index,
     {[this.name]: y, fx},
-    channels,
     {
       width,
       height,
@@ -142,9 +143,11 @@ export class AxisY {
       marginRight,
       marginBottom,
       marginLeft,
+      offsetTop = 0,
       facetMarginLeft,
       facetMarginRight
-    }
+    },
+    context
   ) {
     const {
       axis,
@@ -160,9 +163,9 @@ export class AxisY {
     const offset = name === "y" ? 0 : axis === "left" ? marginLeft - facetMarginLeft : marginRight - facetMarginRight;
     const offsetSign = axis === "left" ? -1 : 1;
     const tx = offsetSign * offset + (axis === "right" ? width - marginRight : marginLeft);
-    return create("svg:g")
+    return create("svg:g", context)
         .call(applyAria, this)
-        .attr("transform", `translate(${tx},0)`)
+        .attr("transform", `translate(${tx},${offsetTop})`)
         .call(createAxis(axis === "right" ? axisRight : axisLeft, y, this))
         .call(maybeTickRotate, tickRotate)
         .attr("font-size", null)
@@ -174,6 +177,7 @@ export class AxisY {
           : gridY(offsetSign * (marginLeft + marginRight - width)))
         .call(!label ? () => {} : g => g.append("text")
             .attr("fill", "currentColor")
+            .attr("font-variant", fontVariant == null ? null : "normal")
             .attr("transform", `translate(${labelOffset * offsetSign},${
                 labelAnchor === "center" ? (height + marginTop - marginBottom) / 2
                   : labelAnchor === "bottom" ? height - marginBottom

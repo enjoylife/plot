@@ -1,6 +1,6 @@
 import {group as grouper, sort, sum, deviation, min, max, mean, median, mode, variance, InternSet, minIndex, maxIndex, rollup} from "d3";
-import {ascendingDefined, firstof} from "../defined.js";
-import {valueof, maybeColorChannel, maybeInput, maybeTuple, maybeLazyChannel, lazyChannel, first, identity, take, labelof, range, second, percentile} from "../options.js";
+import {ascendingDefined} from "../defined.js";
+import {valueof, maybeColorChannel, maybeInput, maybeTuple, maybeColumn, column, first, identity, take, labelof, range, second, percentile} from "../options.js";
 import {basic} from "./basic.js";
 
 // Group on {z, fill, stroke}.
@@ -51,8 +51,8 @@ function groupn(
   filter = filter == null ? undefined : maybeEvaluator("filter", filter, inputs);
 
   // Produce x and y output channels as appropriate.
-  const [GX, setGX] = maybeLazyChannel(x);
-  const [GY, setGY] = maybeLazyChannel(y);
+  const [GX, setGX] = maybeColumn(x);
+  const [GY, setGY] = maybeColumn(y);
 
   // Greedily materialize the z, fill, and stroke channels (if channels and not
   // constants) so that we can reference them for subdividing groups without
@@ -65,11 +65,11 @@ function groupn(
     y1, y2, // consumed if y is an output
     ...options
   } = inputs;
-  const [GZ, setGZ] = maybeLazyChannel(z);
+  const [GZ, setGZ] = maybeColumn(z);
   const [vfill] = maybeColorChannel(fill);
   const [vstroke] = maybeColorChannel(stroke);
-  const [GF = fill, setGF] = maybeLazyChannel(vfill);
-  const [GS = stroke, setGS] = maybeLazyChannel(vstroke);
+  const [GF, setGF] = maybeColumn(vfill);
+  const [GS, setGS] = maybeColumn(vstroke);
 
   return {
     ..."z" in inputs && {z: GZ || z},
@@ -81,7 +81,7 @@ function groupn(
       const Z = valueof(data, z);
       const F = valueof(data, vfill);
       const S = valueof(data, vstroke);
-      const G = maybeSubgroup(outputs, Z, F, S);
+      const G = maybeSubgroup(outputs, {z: Z, fill: F, stroke: S});
       const groupFacets = [];
       const groupData = [];
       const GX = X && setGX([]);
@@ -148,7 +148,7 @@ export function maybeOutputs(outputs, inputs) {
 
 export function maybeOutput(name, reduce, inputs) {
   const evaluator = maybeEvaluator(name, reduce, inputs);
-  const [output, setOutput] = lazyChannel(evaluator.label);
+  const [output, setOutput] = column(evaluator.label);
   let O;
   return {
     name,
@@ -223,15 +223,16 @@ export function maybeReduce(reduce, value) {
     case "y1": return reduceY1;
     case "y2": return reduceY2;
   }
-  throw new Error("invalid reduce");
+  throw new Error(`invalid reduce: ${reduce}`);
 }
 
-export function maybeSubgroup(outputs, Z, F, S) {
-  return firstof(
-    outputs.some(o => o.name === "z") ? undefined : Z,
-    outputs.some(o => o.name === "fill") ? undefined : F,
-    outputs.some(o => o.name === "stroke") ? undefined : S
-  );
+export function maybeSubgroup(outputs, inputs) {
+  for (const name in inputs) {
+    const value = inputs[name];
+    if (value !== undefined && !outputs.some(o => o.name === name)) {
+      return value;
+    }
+  }
 }
 
 export function maybeSort(facets, sort, reverse) {
@@ -267,7 +268,7 @@ export const reduceIdentity = {
   }
 };
 
-const reduceFirst = {
+export const reduceFirst = {
   reduce(I, X) {
     return X[I[0]];
   }

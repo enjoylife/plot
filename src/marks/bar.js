@@ -1,6 +1,6 @@
-import {create} from "d3";
+import {create} from "../context.js";
+import {identity, indexOf, number} from "../options.js";
 import {Mark} from "../plot.js";
-import {number} from "../options.js";
 import {isCollapsed} from "../scales.js";
 import {applyDirectStyles, applyIndirectStyles, applyTransform, impliedString, applyAttr, applyChannelStyles} from "../style.js";
 import {maybeIdentityX, maybeIdentityY} from "../transforms/identity.js";
@@ -18,14 +18,15 @@ export class AbstractBar extends Mark {
     this.rx = impliedString(rx, "auto"); // number or percentage
     this.ry = impliedString(ry, "auto");
   }
-  render(index, scales, channels, dimensions) {
-    const {dx, dy, rx, ry} = this;
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(this._transform, scales, dx, dy)
+  render(index, scales, channels, dimensions, context) {
+    const {rx, ry} = this;
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(this._transform, this, scales)
         .call(g => g.selectAll()
           .data(index)
-          .join("rect")
+          .enter()
+          .append("rect")
             .call(applyDirectStyles, this)
             .attr("x", this._x(scales, channels, dimensions))
             .attr("width", this._width(scales, channels, dimensions))
@@ -46,12 +47,12 @@ export class AbstractBar extends Mark {
   }
   _width({x}, {x: X}, {marginRight, marginLeft, width}) {
     const {insetLeft, insetRight} = this;
-    const bandwidth = X ? x.bandwidth() : width - marginRight - marginLeft;
+    const bandwidth = X && x ? x.bandwidth() : width - marginRight - marginLeft;
     return Math.max(0, bandwidth - insetLeft - insetRight);
   }
   _height({y}, {y: Y}, {marginTop, marginBottom, height}) {
     const {insetTop, insetBottom} = this;
-    const bandwidth = Y ? y.bandwidth() : height - marginTop - marginBottom;
+    const bandwidth = Y && y ? y.bandwidth() : height - marginTop - marginBottom;
     return Math.max(0, bandwidth - insetTop - insetBottom);
   }
 }
@@ -74,8 +75,8 @@ export class BarX extends AbstractBar {
       defaults
     );
   }
-  _transform(selection, {x}, dx, dy) {
-    selection.call(applyTransform, x, null, dx, dy);
+  _transform(selection, mark, {x}) {
+    selection.call(applyTransform, mark, {x}, 0, 0);
   }
   _x({x}, {x1: X1, x2: X2}, {marginLeft}) {
     const {insetLeft} = this;
@@ -101,8 +102,8 @@ export class BarY extends AbstractBar {
       defaults
     );
   }
-  _transform(selection, {y}, dx, dy) {
-    selection.call(applyTransform, null, y, dx, dy);
+  _transform(selection, mark, {y}) {
+    selection.call(applyTransform, mark, {y}, 0, 0);
   }
   _y({y}, {y1: Y1, y2: Y2}, {marginTop}) {
     const {insetTop} = this;
@@ -114,10 +115,10 @@ export class BarY extends AbstractBar {
   }
 }
 
-export function barX(data, options) {
+export function barX(data, options = {y: indexOf, x2: identity}) {
   return new BarX(data, maybeStackX(maybeIntervalX(maybeIdentityX(options))));
 }
 
-export function barY(data, options) {
+export function barY(data, options = {x: indexOf, y2: identity}) {
   return new BarY(data, maybeStackY(maybeIntervalY(maybeIdentityY(options))));
 }

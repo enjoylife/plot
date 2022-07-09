@@ -1,8 +1,8 @@
 import {bin as binner, extent, thresholdFreedmanDiaconis, thresholdScott, thresholdSturges, utcTickInterval} from "d3";
-import {valueof, range, identity, maybeLazyChannel, maybeTuple, maybeColorChannel, maybeValue, mid, labelof, isTemporal} from "../options.js";
-import {coerceDate} from "../scales.js";
+import {valueof, range, identity, maybeColumn, maybeTuple, maybeColorChannel, maybeValue, mid, labelof, isTemporal, isIterable} from "../options.js";
+import {coerceDate, coerceNumber} from "../scales.js";
 import {basic} from "./basic.js";
-import {hasOutput, maybeEvaluator, maybeGroup, maybeOutput, maybeOutputs, maybeReduce, maybeSort, maybeSubgroup, reduceCount, reduceIdentity} from "./group.js";
+import {hasOutput, maybeEvaluator, maybeGroup, maybeOutput, maybeOutputs, maybeReduce, maybeSort, maybeSubgroup, reduceCount, reduceFirst, reduceIdentity} from "./group.js";
 import {maybeInsetX, maybeInsetY} from "./inset.js";
 import {maybeInterval} from "./interval.js";
 
@@ -25,6 +25,18 @@ export function bin(outputs = {fill: "count"}, options = {}) {
   ([outputs, options] = mergeOptions(outputs, options));
   const {x, y} = maybeBinValueTuple(options);
   return binn(x, y, null, null, outputs, maybeInsetX(maybeInsetY(options)));
+}
+
+function maybeDenseInterval(bin, k, options = {}) {
+  return options?.interval == null ? options : bin({[k]: options?.reduce === undefined ? reduceFirst : options.reduce, filter: null}, options);
+}
+
+export function maybeDenseIntervalX(options) {
+  return maybeDenseInterval(binX, "y", options);
+}
+
+export function maybeDenseIntervalY(options) {
+  return maybeDenseInterval(binY, "x", options);
 }
 
 function binn(
@@ -55,14 +67,14 @@ function binn(
   if (gy != null && hasOutput(outputs, "y", "y1", "y2")) gy = null;
 
   // Produce x1, x2, y1, and y2 output channels as appropriate (when binning).
-  const [BX1, setBX1] = maybeLazyChannel(bx);
-  const [BX2, setBX2] = maybeLazyChannel(bx);
-  const [BY1, setBY1] = maybeLazyChannel(by);
-  const [BY2, setBY2] = maybeLazyChannel(by);
+  const [BX1, setBX1] = maybeColumn(bx);
+  const [BX2, setBX2] = maybeColumn(bx);
+  const [BY1, setBY1] = maybeColumn(by);
+  const [BY2, setBY2] = maybeColumn(by);
 
   // Produce x or y output channels as appropriate (when grouping).
   const [k, gk] = gx != null ? [gx, "x"] : gy != null ? [gy, "y"] : [];
-  const [GK, setGK] = maybeLazyChannel(k);
+  const [GK, setGK] = maybeColumn(k);
 
   // Greedily materialize the z, fill, and stroke channels (if channels and not
   // constants) so that we can reference them for subdividing groups without
@@ -76,17 +88,17 @@ function binn(
     stroke,
     x1, x2, // consumed if x is an output
     y1, y2, // consumed if y is an output
-    domain, // eslint-disable-line no-unused-vars
-    cumulative, // eslint-disable-line no-unused-vars
-    thresholds, // eslint-disable-line no-unused-vars
-    interval, // eslint-disable-line no-unused-vars
+    domain,
+    cumulative,
+    thresholds,
+    interval,
     ...options
   } = inputs;
-  const [GZ, setGZ] = maybeLazyChannel(z);
+  const [GZ, setGZ] = maybeColumn(z);
   const [vfill] = maybeColorChannel(fill);
   const [vstroke] = maybeColorChannel(stroke);
-  const [GF = fill, setGF] = maybeLazyChannel(vfill);
-  const [GS = stroke, setGS] = maybeLazyChannel(vstroke);
+  const [GF, setGF] = maybeColumn(vfill);
+  const [GS, setGS] = maybeColumn(vstroke);
 
   return {
     ..."z" in inputs && {z: GZ || z},
@@ -97,7 +109,7 @@ function binn(
       const Z = valueof(data, z);
       const F = valueof(data, vfill);
       const S = valueof(data, vstroke);
-      const G = maybeSubgroup(outputs, Z, F, S);
+      const G = maybeSubgroup(outputs, {z: Z, fill: F, stroke: S});
       const groupFacets = [];
       const groupData = [];
       const GK = K && setGK([]);
@@ -181,7 +193,7 @@ function maybeBin(options) {
   if (options == null) return;
   const {value, cumulative, domain = extent, thresholds} = options;
   const bin = data => {
-    let V = valueof(data, value);
+    let V = valueof(data, value, Array); // d3.bin prefers Array input
     const bin = binner().value(i => V[i]);
     if (isTemporal(V) || isTimeThresholds(thresholds)) {
       V = V.map(coerceDate);
@@ -197,6 +209,7 @@ function maybeBin(options) {
       }
       bin.thresholds(t).domain([min, max]);
     } else {
+      V = V.map(coerceNumber);
       let d = domain;
       let t = thresholds;
       if (isInterval(t)) {
@@ -229,7 +242,7 @@ function maybeThresholds(thresholds, interval) {
       case "sturges": return thresholdSturges;
       case "auto": return thresholdAuto;
     }
-    throw new Error("invalid thresholds");
+    throw new Error(`invalid thresholds: ${thresholds}`);
   }
   return thresholds; // pass array, count, or function to bin.thresholds
 }
@@ -237,7 +250,7 @@ function maybeThresholds(thresholds, interval) {
 // Unlike the interval transform, we require a range method, too.
 function maybeRangeInterval(interval) {
   interval = maybeInterval(interval);
-  if (!isInterval(interval)) throw new Error("invalid interval");
+  if (!isInterval(interval)) throw new Error(`invalid interval: ${interval}`);
   return interval;
 }
 
@@ -246,7 +259,7 @@ function thresholdAuto(values, min, max) {
 }
 
 function isTimeThresholds(t) {
-  return isTimeInterval(t) || t && t[Symbol.iterator] && isTemporal(t);
+  return isTimeInterval(t) || (isIterable(t) && isTemporal(t));
 }
 
 function isTimeInterval(t) {

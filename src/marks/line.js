@@ -1,12 +1,13 @@
-import {create, line as shapeLine} from "d3";
+import {line as shapeLine} from "d3";
+import {create} from "../context.js";
 import {Curve} from "../curve.js";
-import {Mark} from "../plot.js";
 import {indexOf, identity, maybeTuple, maybeZ} from "../options.js";
-import {applyDirectStyles, applyIndirectStyles, applyTransform, applyGroupedChannelStyles, offset, groupIndex} from "../style.js";
+import {Mark} from "../plot.js";
+import {applyDirectStyles, applyIndirectStyles, applyTransform, applyGroupedChannelStyles, groupIndex} from "../style.js";
+import {maybeDenseIntervalX, maybeDenseIntervalY} from "../transforms/bin.js";
 import {applyGroupedMarkers, markers} from "./marker.js";
 
 const defaults = {
-  filter: null,
   ariaLabel: "line",
   fill: "none",
   stroke: "currentColor",
@@ -33,15 +34,18 @@ export class Line extends Mark {
     this.curve = Curve(curve, tension);
     markers(this, options);
   }
-  render(I, {x, y}, channels, dimensions) {
+  filter(index) {
+    return index;
+  }
+  render(index, scales, channels, dimensions, context) {
     const {x: X, y: Y} = channels;
-    const {dx, dy} = this;
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, x, y, offset + dx, offset + dy)
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, scales)
         .call(g => g.selectAll()
-          .data(groupIndex(I, [X, Y], this, channels))
-          .join("path")
+          .data(groupIndex(index, [X, Y], this, channels))
+          .enter()
+          .append("path")
             .call(applyDirectStyles, this)
             .call(applyGroupedChannelStyles, this, channels)
             .call(applyGroupedMarkers, this, channels)
@@ -60,9 +64,9 @@ export function line(data, {x, y, ...options} = {}) {
 }
 
 export function lineX(data, {x = identity, y = indexOf, ...options} = {}) {
-  return new Line(data, {...options, x, y});
+  return new Line(data, maybeDenseIntervalY({...options, x, y}));
 }
 
 export function lineY(data, {x = indexOf, y = identity, ...options} = {}) {
-  return new Line(data, {...options, x, y});
+  return new Line(data, maybeDenseIntervalX({...options, x, y}));
 }

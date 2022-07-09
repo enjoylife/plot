@@ -1,7 +1,5 @@
 import {parse as isoParse} from "isoformat";
 import {color, descending, quantile} from "d3";
-import {symbolAsterisk, symbolDiamond2, symbolPlus, symbolSquare2, symbolTriangle2, symbolX as symbolTimes} from "d3";
-import {symbolCircle, symbolCross, symbolDiamond, symbolSquare, symbolStar, symbolTriangle, symbolWye} from "d3";
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
 const TypedArray = Object.getPrototypeOf(Uint8Array);
@@ -9,11 +7,10 @@ const objectToString = Object.prototype.toString;
 
 // This allows transforms to behave equivalently to channels.
 export function valueof(data, value, arrayType) {
-  const array = arrayType === undefined ? Array : arrayType;
   const type = typeof value;
-  return type === "string" ? array.from(data, field(value))
-    : type === "function" ? array.from(data, value)
-    : type === "number" || value instanceof Date || type === "boolean" ? array.from(data, constant(value))
+  return type === "string" ? map(data, field(value), arrayType)
+    : type === "function" ? map(data, value, arrayType)
+    : type === "number" || value instanceof Date || type === "boolean" ? map(data, constant(value), arrayType)
     : value && typeof value.transform === "function" ? arrayify(value.transform(data), arrayType)
     : arrayify(value, arrayType); // preserve undefined type
 }
@@ -22,6 +19,8 @@ export const field = name => d => d[name];
 export const indexOf = (d, i) => i;
 export const identity = {transform: d => d};
 export const zero = () => 0;
+export const one = () => 1;
+export const yes = () => true;
 export const string = x => x == null ? x : `${x}`;
 export const number = x => x == null ? x : +x;
 export const boolean = x => x == null ? x : !!x;
@@ -79,6 +78,22 @@ export function arrayify(data, type) {
     : (data instanceof type ? data : type.from(data)));
 }
 
+// An optimization of type.from(values, f): if the given values are already an
+// instanceof the desired array type, the faster values.map method is used.
+export function map(values, f, type = Array) {
+  return values instanceof type ? values.map(f) : type.from(values, f);
+}
+
+// An optimization of type.from(values): if the given values are already an
+// instanceof the desired array type, the faster values.slice method is used.
+export function slice(values, type = Array) {
+  return values instanceof type ? values.slice() : type.from(values);
+}
+
+export function isTypedArray(values) {
+  return values instanceof TypedArray;
+}
+
 // Disambiguates an options object (e.g., {y: "x2"}) from a primitive value.
 export function isObject(option) {
   return option?.toString === objectToString;
@@ -97,6 +112,12 @@ export function isScaleOptions(option) {
 // definition expressed as a channel transform (e.g., {transform: …}).
 export function isOptions(option) {
   return isObject(option) && typeof option.transform !== "function";
+}
+
+// Disambiguates a sort transform (e.g., {sort: "date"}) from a channel domain
+// sort definition (e.g., {sort: {y: "x"}}).
+export function isDomainSort(sort) {
+  return isOptions(sort) && sort.value === undefined && sort.channel === undefined;
 }
 
 // For marks specified either as [0, x] or [x1, x2], such as areas and bars.
@@ -126,7 +147,10 @@ export function maybeZ({z, fill, stroke} = {}) {
 
 // Returns a Uint32Array with elements [0, 1, 2, … data.length - 1].
 export function range(data) {
-  return Uint32Array.from(data, indexOf);
+  const n = data.length;
+  const r = new Uint32Array(n);
+  for (let i = 0; i < n; ++i) r[i] = i;
+  return r;
 }
 
 // Returns a filtered range of data given the test function.
@@ -136,7 +160,7 @@ export function where(data, test) {
 
 // Returns an array [values[index[0]], values[index[1]], …].
 export function take(values, index) {
-  return Array.from(index, i => values[i]);
+  return map(index, i => values[i]);
 }
 
 // Based on InternMap (d3.group).
@@ -153,10 +177,10 @@ export function maybeInput(key, options) {
   return options[key];
 }
 
-// Defines a channel whose values are lazily populated by calling the returned
+// Defines a column whose values are lazily populated by calling the returned
 // setter. If the given source is labeled, the label is propagated to the
-// returned channel definition.
-export function lazyChannel(source) {
+// returned column definition.
+export function column(source) {
   let value;
   return [
     {
@@ -167,29 +191,29 @@ export function lazyChannel(source) {
   ];
 }
 
+// Like column, but allows the source to be null.
+export function maybeColumn(source) {
+  return source == null ? [source] : column(source);
+}
+
 export function labelof(value, defaultValue) {
   return typeof value === "string" ? value
     : value && value.label !== undefined ? value.label
     : defaultValue;
 }
 
-// Like lazyChannel, but allows the source to be null.
-export function maybeLazyChannel(source) {
-  return source == null ? [source] : lazyChannel(source);
-}
-
-// Assuming that both x1 and x2 and lazy channels (per above), this derives a
-// new a channel that’s the average of the two, and which inherits the channel
-// label (if any). Both input channels are assumed to be quantitative. If either
-// channel is temporal, the returned channel is also temporal.
+// Assuming that both x1 and x2 and lazy columns (per above), this derives a new
+// a column that’s the average of the two, and which inherits the column label
+// (if any). Both input columns are assumed to be quantitative. If either column
+// is temporal, the returned column is also temporal.
 export function mid(x1, x2) {
   return {
     transform(data) {
       const X1 = x1.transform(data);
       const X2 = x2.transform(data);
       return isTemporal(X1) || isTemporal(X2)
-        ? Array.from(X1, (_, i) => new Date((+X1[i] + +X2[i]) / 2))
-        : Float64Array.from(X1, (_, i) => (+X1[i] + +X2[i]) / 2);
+        ? map(X1, (_, i) => new Date((+X1[i] + +X2[i]) / 2))
+        : map(X1, (_, i) => (+X1[i] + +X2[i]) / 2, Float64Array);
     },
     label: x1.label
   };
@@ -208,6 +232,10 @@ export function numberChannel(source) {
     transform: data => valueof(data, source, Float64Array),
     label: labelof(source)
   };
+}
+
+export function isIterable(value) {
+  return value && typeof value[Symbol.iterator] === "function";
 }
 
 export function isTextual(values) {
@@ -305,48 +333,6 @@ export function isRound(value) {
   return /^\s*round\s*$/i.test(value);
 }
 
-const symbols = new Map([
-  ["asterisk", symbolAsterisk],
-  ["circle", symbolCircle],
-  ["cross", symbolCross],
-  ["diamond", symbolDiamond],
-  ["diamond2", symbolDiamond2],
-  ["plus", symbolPlus],
-  ["square", symbolSquare],
-  ["square2", symbolSquare2],
-  ["star", symbolStar],
-  ["times", symbolTimes],
-  ["triangle", symbolTriangle],
-  ["triangle2", symbolTriangle2],
-  ["wye", symbolWye]
-]);
-
-function isSymbolObject(value) {
-  return value && typeof value.draw === "function";
-}
-
-export function isSymbol(value) {
-  if (isSymbolObject(value)) return true;
-  if (typeof value !== "string") return false;
-  return symbols.has(value.toLowerCase());
-}
-
-export function maybeSymbol(symbol) {
-  if (symbol == null || isSymbolObject(symbol)) return symbol;
-  const value = symbols.get(`${symbol}`.toLowerCase());
-  if (value) return value;
-  throw new Error(`invalid symbol: ${symbol}`);
-}
-
-export function maybeSymbolChannel(symbol) {
-  if (symbol == null || isSymbolObject(symbol)) return [undefined, symbol];
-  if (typeof symbol === "string") {
-    const value = symbols.get(`${symbol}`.toLowerCase());
-    if (value) return [undefined, value];
-  }
-  return [symbol, undefined];
-}
-
 export function maybeFrameAnchor(value = "middle") {
   return keyword(value, "frameAnchor", ["middle", "top-left", "top", "top-right", "right", "bottom-right", "bottom", "bottom-left", "left"]);
 }
@@ -359,4 +345,20 @@ export function order(values) {
   const first = values[0];
   const last = values[values.length - 1];
   return descending(first, last);
+}
+
+// Unlike {...defaults, ...options}, this ensures that any undefined (but
+// present) properties in options inherit the given default value.
+export function inherit(options = {}, ...rest) {
+  let o = options;
+  for (const defaults of rest) {
+    for (const key in defaults) {
+      if (o[key] === undefined) {
+        const value = defaults[key];
+        if (o === options) o = {...o, [key]: value};
+        else o[key] = value;
+      }
+    }
+  }
+  return o;
 }

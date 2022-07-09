@@ -1,10 +1,10 @@
-import {create} from "d3";
-import {number} from "../options.js";
+import {create} from "../context.js";
+import {identity, indexOf, number} from "../options.js";
 import {Mark} from "../plot.js";
 import {isCollapsed} from "../scales.js";
 import {applyDirectStyles, applyIndirectStyles, applyTransform, impliedString, applyAttr, applyChannelStyles} from "../style.js";
 import {maybeIdentityX, maybeIdentityY} from "../transforms/identity.js";
-import {maybeIntervalX, maybeIntervalY} from "../transforms/interval.js";
+import {maybeTrivialIntervalX, maybeTrivialIntervalY} from "../transforms/interval.js";
 import {maybeStackX, maybeStackY} from "../transforms/stack.js";
 
 const defaults = {
@@ -44,16 +44,18 @@ export class Rect extends Mark {
     this.rx = impliedString(rx, "auto"); // number or percentage
     this.ry = impliedString(ry, "auto");
   }
-  render(index, {x, y}, channels, dimensions) {
+  render(index, scales, channels, dimensions, context) {
+    const {x, y} = scales;
     const {x1: X1, y1: Y1, x2: X2, y2: Y2} = channels;
     const {marginTop, marginRight, marginBottom, marginLeft, width, height} = dimensions;
-    const {insetTop, insetRight, insetBottom, insetLeft, dx, dy, rx, ry} = this;
-    return create("svg:g")
-        .call(applyIndirectStyles, this, dimensions)
-        .call(applyTransform, x, y, dx, dy)
+    const {insetTop, insetRight, insetBottom, insetLeft, rx, ry} = this;
+    return create("svg:g", context)
+        .call(applyIndirectStyles, this, scales, dimensions)
+        .call(applyTransform, this, {x: X1 && X2 ? x : null, y: Y1 && Y2 ? y : null}, 0, 0)
         .call(g => g.selectAll()
           .data(index)
-          .join("rect")
+          .enter()
+          .append("rect")
             .call(applyDirectStyles, this)
             .attr("x", X1 && X2 && !isCollapsed(x) ? i => Math.min(X1[i], X2[i]) + insetLeft : marginLeft + insetLeft)
             .attr("y", Y1 && Y2 && !isCollapsed(y) ? i => Math.min(Y1[i], Y2[i]) + insetTop : marginTop + insetTop)
@@ -67,13 +69,13 @@ export class Rect extends Mark {
 }
 
 export function rect(data, options) {
-  return new Rect(data, maybeIntervalX(maybeIntervalY(options)));
+  return new Rect(data, maybeTrivialIntervalX(maybeTrivialIntervalY(options)));
 }
 
-export function rectX(data, options) {
-  return new Rect(data, maybeStackX(maybeIntervalY(maybeIdentityX(options))));
+export function rectX(data, options = {y: indexOf, interval: 1, x2: identity}) {
+  return new Rect(data, maybeStackX(maybeTrivialIntervalY(maybeIdentityX(options))));
 }
 
-export function rectY(data, options) {
-  return new Rect(data, maybeStackY(maybeIntervalX(maybeIdentityY(options))));
+export function rectY(data, options = {x: indexOf, interval: 1, y2: identity}) {
+  return new Rect(data, maybeStackY(maybeTrivialIntervalX(maybeIdentityY(options))));
 }
