@@ -1,11 +1,11 @@
 import {cross, difference, groups, InternMap, select} from "d3";
 import {autoAxisTicks, autoScaleLabels, Axes} from "./axes.js";
-import {Channel, channelDomain, channelObject, valueObject} from "./channel.js";
+import {Channel, channelDomain, Channels, valueObject} from "./channel.js";
 import {Context, create} from "./context.js";
 import {defined} from "./defined.js";
 import {Dimensions} from "./dimensions.js";
 import {exposeLegends, Legends} from "./legends.js";
-import {arrayify, isDomainSort, isScaleOptions, keyword, map, range, second, take, where, yes} from "./options.js";
+import {arrayify, isDomainSort, isScaleOptions, keyword, map, maybeNamed, range, second, take, where, yes} from "./options.js";
 import {autoScaleRange, exposeScales, ScaleFunctions, Scales} from "./scales.js";
 import {position, registry as scaleRegistry} from "./scales/index.js";
 import {selectionKey} from "./selection.js";
@@ -239,7 +239,6 @@ export function plot(options = {}) {
     }
   }
 
-
   // Wrap the plot in a figure with a caption, if desired.
   let figure = svg;
   const legends = Legends(scaleDescriptors, context, options);
@@ -277,29 +276,21 @@ export function plot(options = {}) {
 }
 
 export class Mark {
-  constructor(data, channels = [], options = {}, defaults) {
+  constructor(data, channels = {}, options = {}, defaults) {
     const {facet = "auto", sort, dx, dy, clip, channels: extraChannels} = options;
-    const names = new Set();
     this.data = data;
     this.sort = isDomainSort(sort) ? sort : null;
     this.initializer = initializer(options).initializer;
     this.transform = this.initializer ? options.transform : basic(options).transform;
     this.facet = facet == null || facet === false ? null : keyword(facet === true ? "include" : facet, "facet", ["auto", "include", "exclude"]);
-    if (extraChannels !== undefined) channels = [...channels, ...extraChannels.filter(e => !channels.some(c => c.name === e.name))];
-    if (defaults !== undefined) channels = [...channels, ...styles(this, options, defaults)];
-    this.channels = channels.filter(channel => {
-      const {name, value, optional} = channel;
-      if (value == null) {
-        if (optional) return false;
-        throw new Error(`missing channel value: ${name}`);
-      }
-      if (name == null) throw new Error("missing channel name");
-      const key = `${name}`;
-      if (key === "__proto__") throw new Error(`illegal channel name: ${key}`);
-      if (names.has(key)) throw new Error(`duplicate channel: ${key}`);
-      names.add(key);
-      return true;
-    });
+    channels = maybeNamed(channels);
+    if (extraChannels !== undefined) channels = {...maybeNamed(extraChannels), ...channels};
+    if (defaults !== undefined) channels = {...styles(this, options, defaults), ...channels};
+    this.channels = Object.fromEntries(Object.entries(channels).filter(([name, {value, optional}]) => {
+      if (value != null) return true;
+      if (optional) return false;
+      throw new Error(`missing channel value: ${name}`);
+    }));
     this.dx = +dx || 0;
     this.dy = +dy || 0;
     this.clip = maybeClip(clip);
@@ -308,7 +299,7 @@ export class Mark {
     let data = arrayify(this.data);
     if (facets === undefined && data != null) facets = [range(data)];
     if (this.transform != null) ({facets, data} = this.transform(data, facets)), data = arrayify(data);
-    const channels = channelObject(this.channels, data);
+    const channels = Channels(this.channels, data);
     if (this.sort != null) channelDomain(channels, facetChannels, data, this.sort);
     return {data, facets, channels};
   }
@@ -446,7 +437,6 @@ function facetMap({fx, fy}) {
   return new (fx && fy ? FacetMap2 : FacetMap);
 }
 
-
 class FacetMap {
   constructor() {
     this._ = new InternMap();
@@ -471,12 +461,10 @@ class FacetMap2 extends FacetMap {
     const map = super.get(key1);
     return map ? map.has(key2) : false;
   }
-
   get([key1, key2]) {
     const map = super.get(key1);
     return map && map.get(key2);
   }
-
   set([key1, key2], value) {
     const map = super.get(key1);
     if (map) map.set(key2, value);
@@ -490,4 +478,3 @@ class FacetMap2 extends FacetMap {
     }
   }
 }
-

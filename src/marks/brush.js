@@ -16,10 +16,10 @@ export class Brush extends Mark {
   constructor(data, {x, y, ...options} = {}) {
     super(
       data,
-      [
-        {name: "x", value: x, scale: "x", optional: true},
-        {name: "y", value: y, scale: "y", optional: true}
-      ],
+        {
+          "x": {value: x, scale: "x", optional: true},
+          "y": {value: y, scale: "y", optional: true}
+        },
       options,
       defaults
     );
