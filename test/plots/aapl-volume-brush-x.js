@@ -16,11 +16,12 @@ export default async function() {
     marks: [
       Plot.rectY(data, Plot.binX({y: "proportion"}, {x: d => Math.log10(d.Volume)})),
       Plot.ruleY([0]),
-      Plot.brushX(data, {x: d => Math.log10(d.Volume)})
+      Plot.brushX(data,  {x: d => Math.log10(d.Volume)})
     ]
   });
   const output = html`<output>`;
-  plot.oninput = () => output.value = plot.value.length;
-  plot.oninput();
+  plot.addEventListener("input", (ev) => {
+    output.value = ev.detail.selected.length?.toString() ?? '';
+  });
   return html`${plot}${output}`;
 }
