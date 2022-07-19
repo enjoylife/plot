@@ -32,7 +32,8 @@
     "test:typecheck": "tsc --noEmit",
     "prepublishOnly": "rm -rf dist && rollup -c && tsc",
     "postpublish": "git push && git push --tags",
-    "dev": "vite"
+    "dev": "vite",
+    "prepack": "yarn prepublishOnly"
   },
   "_moduleAliases": {
     "@observablehq/plot": "./src/index.js"
