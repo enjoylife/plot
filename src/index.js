@@ -35,3 +35,7 @@ export {treeNode, treeLink} from "./transforms/tree.js";
 export {formatIsoDate, formatWeekday, formatMonth} from "./format.js";
 export {scale} from "./scales.js";
 export {legend} from "./legends.js";
+
+export {selection} from "./selection.js";
+export {Brush, brush, brushX, brushY} from "./marks/brush.js";
+export {Pointer, pointer, pointerX, pointerY} from "./marks/pointer.js";

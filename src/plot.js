@@ -14,6 +14,7 @@ import {
   maybeNamed,
   range,
   second,
+  take,
   where,
   yes
 } from "./options.js";
@@ -23,6 +24,7 @@ import {applyInlineStyles, maybeClassName, maybeClip, styles} from "./style.js";
 import {basic, initializer} from "./transforms/basic.js";
 import {maybeInterval} from "./transforms/interval.js";
 import {consumeWarnings, warn} from "./warnings.js";
+import {selection} from "./selection.js";
 
 /** @jsdoc plot */
 export function plot(options = {}) {
@@ -211,6 +213,7 @@ export function plot(options = {}) {
   if (axisY) svg.appendChild(axisY.render(null, scales, dimensions, context));
   if (axisX) svg.appendChild(axisX.render(null, scales, dimensions, context));
 
+  let selectedValue = [];
   // Render (possibly faceted) marks.
   if (facets !== undefined) {
     const fyDomain = fy && fy.domain();
@@ -284,7 +287,15 @@ export function plot(options = {}) {
     for (const [mark, {channels, values, facets}] of stateByMark) {
       const facet = facets ? mark.filter(facets[0], channels, values) : null;
       const node = mark.render(facet, scales, values, dimensions, context);
-      if (node != null) svg.appendChild(node);
+      if (node != null) {
+        svg.appendChild(node);
+        if (node[selection] !== undefined) {
+          selectedValue = markValue(mark, node[selection]);
+          node.addEventListener("input", () => {
+            figure.value = markValue(mark, node[selection]);
+          });
+        }
+      }
     }
   }
 
@@ -306,6 +317,7 @@ export function plot(options = {}) {
 
   figure.scale = exposeScales(scaleDescriptors);
   figure.legend = exposeLegends(scaleDescriptors, context, options);
+  figure.value = selectedValue;
 
   const w = consumeWarnings();
   if (w > 0) {
@@ -380,6 +392,9 @@ export function marks(...marks) {
 
 function markify(mark) {
   return typeof mark?.render === "function" ? mark : new Render(mark);
+}
+function markValue(mark, selection) {
+  return selection === null ? mark.data : take(mark.data, selection);
 }
 
 class Render extends Mark {
