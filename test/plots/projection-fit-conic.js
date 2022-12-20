@@ -6,6 +6,8 @@ export default async function () {
   const world = await d3.json("data/countries-110m.json");
   const land = feature(world, world.objects.land);
   return Plot.plot({
+    width: 640,
+    height: 400,
     projection: {
       type: "conic-equal-area",
       parallels: [-42, -5],

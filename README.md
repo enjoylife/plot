@@ -8,6 +8,7 @@
 * [Transforms](https://observablehq.com/@observablehq/plot-transforms?collection=@observablehq/plot) - deriving data
 * [Facets](https://observablehq.com/@observablehq/plot-facets?collection=@observablehq/plot) - small multiples
 * [Legends](https://observablehq.com/@observablehq/plot-legends?collection=@observablehq/plot) - documenting visual encodings
+* [Mapping](https://observablehq.com/@observablehq/plot-mapping?collection=@observablehq/plot) - creating maps with geometries and projections
 
 This README is intended as a technical reference for Plot’s API. For more, please see:
 
@@ -34,12 +35,12 @@ Plot can then be imported as a namespace:
 import * as Plot from "@observablehq/plot";
 ```
 
-In vanilla HTML, Plot can be imported as an ES module, say from Skypack:
+In vanilla HTML, Plot can be imported as an ES module, say from jsDelivr:
 
 ```html
 <script type="module">
 
-import * as Plot from "https://cdn.skypack.dev/@observablehq/plot@0.6";
+import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
 
 document.body.append(Plot.plot(options));
 
@@ -278,7 +279,7 @@ The inset scale options can provide “breathing room” to separate marks from 
 
 In addition to the generic *ordinal* scale type, which requires an explicit output range value for each input domain value, Plot supports special *point* and *band* scale types for encoding ordinal data as position. These scale types accept a [*min*, *max*] range similar to quantitative scales, and divide this continuous interval into discrete points or bands based on the number of distinct values in the domain (*i.e.*, the domain’s cardinality). If the associated marks have no effective width along the ordinal dimension—such as a dot, rule, or tick—then use a *point* scale; otherwise, say for a bar, use a *band* scale. In the image below, the top *x* scale is a *point* scale while the bottom *x* scale is a *band* scale; see [Plot: Scales](https://observablehq.com/@observablehq/plot-scales) for an interactive version.
 
-<img src="./img/point-band.png" width="640" height="144" alt="point and band scales">
+<img src="./img/point-band.png" width="640" alt="point and band scales">
 
 Ordinal position scales support additional options, all specified as proportions in [0, 1]:
 
@@ -313,7 +314,7 @@ Top-level options are also supported as shorthand: **grid** (for *x* and *y* onl
 
 ### Projection options
 
-The top-level **projection** option applies a two-dimensional (often geographic) projection in place of *x* and *y* scales. It is typically used in conjunction with a [geo mark](#geo) to produce a map, but can be used with any mark that supports *x* and *y* channels, such as [dot](#dot) and [text](#text). The following built-in named projections are supported:
+The top-level **projection** option applies a two-dimensional (often geographic) projection in place of *x* and *y* scales. It is typically used in conjunction with a [geo mark](#geo) to produce a map, but can be used with any mark that supports *x* and *y* channels, such as [dot](#dot), [text](#text), [arrow](#arrow), and [rect](#rect). For marks that use *x1*, *y1*, *x2*, and *y2* channels, the two projected points are ⟨*x1*, *y1*⟩ and ⟨*x2*, *y2*⟩; otherwise, the projected point is ⟨*x*, *y*⟩. The following built-in named projections are supported:
 
 * *equirectangular* - the equirectangular, or *plate carrée*, projection
 * *orthographic* - the orthographic projection
@@ -523,20 +524,47 @@ Note: when the value of the sort option is a string or a function, it is interpr
 
 ### Facet options
 
-The *facet* option enables [faceting](https://observablehq.com/@observablehq/plot-facets). When faceting, two additional band scales may be configured:
+Plot’s [faceting system](https://observablehq.com/@observablehq/plot-facets) produces small multiples by partitioning data in discrete sets and repeating the plot for each set. When faceting, two additional band scales may be configured:
 
-* **fx** - the horizontal position, a *band* scale
-* **fy** - the vertical position, a *band* scale
+* *fx* - the horizontal position, a *band* scale
+* *fy* - the vertical position, a *band* scale
 
-Similar to [marks](#marks), faceting requires specifying data and at least one of two optional channels:
+Faceting may either be specified at the top level of the plot or on individual marks. When specified at the top level, the following options indicate which data should be faceted, and how:
 
 * facet.**data** - the data to be faceted
 * facet.**x** - the horizontal position; bound to the *fx* scale, which must be *band*
 * facet.**y** - the vertical position; bound to the *fy* scale, which must be *band*
 
-The facet.**x** and facet.**y** channels are strictly ordinal or categorical (*i.e.*, discrete); each distinct channel value defines a facet. Quantitative data must be manually discretized for faceting, say by rounding or binning. (Automatic binning for quantitative data may be added in the future; see [#14](https://github.com/observablehq/plot/issues/14).)
+With top-level faceting, any mark that uses the specified facet data will be faceted by default, whereas marks that use different data will be repeated across all facets. (See the *mark*.**facet** option below for more). When specified at the mark level, facets can be defined for each mark via the *mark*.**fx** or *mark*.**fy** channel options.
 
-The following *facet* constant options are also supported:
+Here is an example of top-level faceting:
+
+```js
+Plot.plot({
+  facet: {
+    data: penguins,
+    x: "sex",
+    y: "island"
+  },
+  marks: [
+    Plot.dot(penguins, {x: "culmen_length_mm", y: "culmen_depth_mm"})
+  ]
+})
+```
+
+And here is the equivalent mark-level faceting:
+
+```js
+Plot.plot({
+  marks: [
+    Plot.dot(penguins, {x: "culmen_length_mm", y: "culmen_depth_mm", fx: "sex", fy: "island"})
+  ]
+})
+```
+
+Regardless of whether top- or mark-level faceting is used, the *fx* and *fy* channels are strictly ordinal or categorical (*i.e.*, discrete); each distinct channel value defines a facet. Quantitative data must be manually discretized for faceting, say by rounding or binning. (Automatic binning for quantitative data may be added in the future; see [#14](https://github.com/observablehq/plot/issues/14).) When mark-level faceting is used, the *fx* and *fy* channels are computed prior to the [mark’s transform](#transforms), if any (*i.e.*, facet channels are not transformed).
+
+The following top-level facet constant options are also supported:
 
 * facet.**marginTop** - the top margin
 * facet.**marginRight** - the right margin
@@ -546,28 +574,16 @@ The following *facet* constant options are also supported:
 * facet.**grid** - if true, draw grid lines for each facet
 * facet.**label** - if null, disable default facet axis labels
 
-Faceting can be explicitly enabled or disabled on a mark with the *facet* option, which accepts the following values:
+Faceting can be explicitly enabled or disabled on a mark with the *mark*.**facet** option, which accepts the following values:
 
-* *auto* (default) - equivalent to *include* when mark data is strictly equal to facet data; else null
+* *auto* (default) - automatically determine if this mark should be faceted
 * *include* (or true) - draw the subset of the mark’s data in the current facet
 * *exclude* - draw the subset of the mark’s data *not* in the current facet
 * null (or false) - repeat this mark’s data across all facets (i.e., no faceting)
 
-```js
-Plot.plot({
-  facet: {
-    data: penguins,
-    x: "sex"
-  },
-  marks: [
-    Plot.frame(), // draws an outline around each facet
-    Plot.dot(penguins, {x: "culmen_length_mm", y: "culmen_depth_mm", fill: "#eee", facet: "exclude"}), // draws excluded penguins on each facet
-    Plot.dot(penguins, {x: "culmen_length_mm", y: "culmen_depth_mm"}) // draws only the current facet’s subset
-  ]
-})
-```
+When top-level faceting is used, the default *auto* setting is equivalent to *include* when the mark data is strictly equal to the top-level facet data; otherwise it is equivalent to null. When the *include* or *exclude* facet mode is chosen, the mark data must be parallel to the top-level facet data: the data must have the same length and order. If the data are not parallel, then the wrong data may be shown in each facet. The default *auto* therefore requires strict equality (`===`) for safety, and using the facet data as mark data is recommended when using the *exclude* facet mode. (To construct parallel data safely, consider using [*array*.map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map) on the facet data.)
 
-When the *include* or *exclude* facet mode is chosen, the mark data must be parallel to the facet data: the mark data must have the same length and order as the facet data. If the data are not parallel, then the wrong data may be shown in each facet. The default *auto* therefore requires strict equality (`===`) for safety, and using the facet data as mark data is recommended when using the *exclude* facet mode. (To construct parallel data safely, consider using [*array*.map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map) on the facet data.)
+When mark-level faceting is used, the default *auto* setting is equivalent to *include*: the mark will be faceted if either the *mark*.**fx** or *mark*.**fy** channel option (or both) is specified. The null or false option will disable faceting, while *exclude* draws the subset of the mark’s data *not* in the current facet.
 
 ## Legends
 
@@ -1403,7 +1419,7 @@ The **fill** defaults to none. The **stroke** defaults to currentColor if the fi
 
 Points along the line are connected in input order. Likewise, if there are multiple series via the *z*, *fill*, or *stroke* channel, the series are drawn in input order such that the last series is drawn on top. Typically, the data is already in sorted order, such as chronological for time series; if sorting is needed, consider a [sort transform](#transforms).
 
-The line mark supports [curve options](#curves) to control interpolation between points, and [marker options](#markers) to add a marker (such as a dot or an arrowhead) on each of the control points. If any of the *x* or *y* values are invalid (undefined, null, or NaN), the line will be interrupted, resulting in a break that divides the line shape into multiple segments. (See [d3-shape’s *line*.defined](https://github.com/d3/d3-shape/blob/main/README.md#line_defined) for more.) If a line segment consists of only a single point, it may appear invisible unless rendered with rounded or square line caps. In addition, some curves such as *cardinal-open* only render a visible segment if it contains multiple points.
+The line mark supports [curve options](#curves) to control interpolation between points, and [marker options](#markers) to add a marker (such as a dot or an arrowhead) on each of the control points. The default curve is *auto*, which is equivalent to *linear* if there is no [projection](#projection-options), and otherwise uses the associated projection. If any of the *x* or *y* values are invalid (undefined, null, or NaN), the line will be interrupted, resulting in a break that divides the line shape into multiple segments. (See [d3-shape’s *line*.defined](https://github.com/d3/d3-shape/blob/main/README.md#line_defined) for more.) If a line segment consists of only a single point, it may appear invisible unless rendered with rounded or square line caps. In addition, some curves such as *cardinal-open* only render a visible segment if it contains multiple points.
 
 #### Plot.line(*data*, *options*)
 
@@ -2836,9 +2852,9 @@ The following named curve methods are supported:
 * *step* - a piecewise constant function where *y* changes at the midpoint of *x*
 * *step-after* - a piecewise constant function where *y* changes after *x*
 * *step-before* - a piecewise constant function where *x* changes after *y*
-* *projection* - use the (possibly spherical) [projection](#projection-options)
+* *auto* - like *linear*, but use the (possibly spherical) [projection](#projection-options), if any
 
-If *curve* is a function, it will be invoked with a given *context* in the same fashion as a [D3 curve factory](https://github.com/d3/d3-shape/blob/main/README.md#custom-curves). The *projection* curve is only available for the [line mark](#line) and is typically used in conjunction with a spherical [projection](#projection-options) to interpolate along [geodesics](https://en.wikipedia.org/wiki/Geodesic).
+If *curve* is a function, it will be invoked with a given *context* in the same fashion as a [D3 curve factory](https://github.com/d3/d3-shape/blob/main/README.md#custom-curves). The *auto* curve is only available for the [line mark](#line) and is typically used in conjunction with a spherical [projection](#projection-options) to interpolate along [geodesics](https://en.wikipedia.org/wiki/Geodesic).
 
 The tension option only has an effect on bundle, cardinal and Catmull–Rom splines (*bundle*, *cardinal*, *cardinal-open*, *cardinal-closed*, *catmull-rom*, *catmull-rom-open*, and *catmull-rom-closed*). For bundle splines, it corresponds to [beta](https://github.com/d3/d3-shape/blob/main/README.md#curveBundle_beta); for cardinal splines, [tension](https://github.com/d3/d3-shape/blob/main/README.md#curveCardinal_tension); for Catmull–Rom splines, [alpha](https://github.com/d3/d3-shape/blob/main/README.md#curveCatmullRom_alpha).
 
@@ -2861,7 +2877,7 @@ The following named markers are supported:
 
 If *marker* is true, it defaults to *circle*. If *marker* is a function, it will be called with a given *color* and must return an SVG marker element.
 
-The primary color of a marker is inherited from the *stroke* of the associated mark. The *arrow* marker is [automatically oriented](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/orient) such that it points in the tangential direction of the path at the position the marker is placed. The *circle* markers are centered around the given vertex. Note that lines whose curve is not *linear* (the default), markers are not necessarily drawn at the data positions given by *x* and *y*; marker placement is determined by the (possibly Bézier) path segments generated by the curve. To ensure that symbols are drawn at a given *x* and *y* position, consider using a [dot](#dot).
+The primary color of a marker is inherited from the *stroke* of the associated mark. The *arrow* marker is [automatically oriented](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/orient) such that it points in the tangential direction of the path at the position the marker is placed. The *circle* markers are centered around the given vertex. Note that for lines whose curve is not *linear*, markers are not necessarily drawn at the data positions given by *x* and *y*; marker placement is determined by the (possibly Bézier) path segments generated by the curve. To ensure that symbols are drawn at a given *x* and *y* position, consider using a [dot](#dot).
 
 ## Formats
 
