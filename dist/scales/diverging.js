@@ -1,4 +1,4 @@
-import { interpolateNumber, interpolateRgb, piecewise, scaleDiverging, scaleDivergingLog, scaleDivergingPow, scaleDivergingSymlog } from "d3";
+import { descending, interpolateNumber, interpolateRgb, piecewise, scaleDiverging, scaleDivergingLog, scaleDivergingPow, scaleDivergingSymlog } from "d3";
 import { positive, negative } from "../defined.js";
 import { quantitativeScheme } from "./schemes.js";
 import { registry, color } from "./index.js";
@@ -10,6 +10,8 @@ function ScaleD(key, scale, transform, channels, { type, nice, clamp, domain = i
     : interpolateNumber, reverse }) {
     pivot = +pivot;
     let [min, max] = domain;
+    if (descending(min, max) < 0)
+        ([min, max] = [max, min]), (reverse = !reverse);
     min = Math.min(min, pivot);
     max = Math.max(max, pivot);
     // Sometimes interpolate is a named interpolator, such as "lab" for Lab color

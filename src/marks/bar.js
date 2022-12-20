@@ -1,5 +1,5 @@
 import {create} from "../context.js";
-import {identity, indexOf, number} from "../options.js";
+import {each, identity, indexOf, maybePickerCursor, number} from "../options.js";
 import {Mark} from "../plot.js";
 import {isCollapsed} from "../scales.js";
 import {
@@ -8,7 +8,8 @@ import {
   applyTransform,
   impliedString,
   applyAttr,
-  applyChannelStyles
+  applyChannelStyles,
+  applyStyle
 } from "../style.js";
 import {maybeIdentityX, maybeIdentityY} from "../transforms/identity.js";
 import {maybeIntervalX, maybeIntervalY} from "../transforms/interval.js";
@@ -24,6 +25,7 @@ export class AbstractBar extends Mark {
     this.insetLeft = number(insetLeft);
     this.rx = impliedString(rx, "auto"); // number or percentage
     this.ry = impliedString(ry, "auto");
+    this.cursor = maybePickerCursor(channels.picker);
   }
   render(index, scales, channels, dimensions, context) {
     const {rx, ry} = this;
@@ -41,11 +43,26 @@ export class AbstractBar extends Mark {
           .attr("width", this._width(scales, channels, dimensions))
           .attr("y", this._y(scales, channels, dimensions))
           .attr("height", this._height(scales, channels, dimensions))
+          .on("click", this._click(scales, channels))
+          .call(applyStyle, "cursor", this.cursor)
           .call(applyAttr, "rx", rx)
           .call(applyAttr, "ry", ry)
           .call(applyChannelStyles, this, channels)
       )
       .node();
+  }
+  _click(scales, {picker: J}) {
+    if (!J) {
+      return () => {};
+    }
+    return (event, i) => {
+      event.target.dispatchEvent(
+        new CustomEvent("pick", {
+          bubbles: true,
+          detail: {type: event.type, picked: J[i]}
+        })
+      );
+    };
   }
   _x(scales, {x: X}, {marginLeft}) {
     const {insetLeft} = this;
@@ -73,13 +90,14 @@ const defaults = {
 
 export class BarX extends AbstractBar {
   constructor(data, options = {}) {
-    const {x1, x2, y} = options;
+    const {x1, x2, y, picker = each} = options;
     super(
       data,
       {
         x1: {value: x1, scale: "x"},
         x2: {value: x2, scale: "x"},
-        y: {value: y, scale: "y", type: "band", optional: true}
+        y: {value: y, scale: "y", type: "band", optional: true},
+        picker: {value: picker, optional: true}
       },
       options,
       defaults
@@ -102,13 +120,14 @@ export class BarX extends AbstractBar {
 
 export class BarY extends AbstractBar {
   constructor(data, options = {}) {
-    const {x, y1, y2} = options;
+    const {x, y1, y2, picker = each} = options;
     super(
       data,
       {
         y1: {value: y1, scale: "y"},
         y2: {value: y2, scale: "y"},
-        x: {value: x, scale: "x", type: "band", optional: true}
+        x: {value: x, scale: "x", type: "band", optional: true},
+        picker: {value: picker, optional: true}
       },
       options,
       defaults

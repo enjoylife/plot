@@ -1,6 +1,11 @@
 import { geoAlbers, geoAlbersUsa, geoAzimuthalEqualArea, geoAzimuthalEquidistant, geoClipRectangle, geoConicConformal, geoConicEqualArea, geoConicEquidistant, geoEqualEarth, geoEquirectangular, geoGnomonic, geoMercator, geoOrthographic, geoPath, geoStereographic, geoTransform, geoTransverseMercator } from "d3";
+import { valueObject } from "./channel.js";
 import { constant, isObject } from "./options.js";
+import { coerceNumbers } from "./scales.js";
 import { warn } from "./warnings.js";
+const pi = Math.PI;
+const tau = 2 * pi;
+const defaultAspectRatio = 0.618;
 export function Projection({ projection, inset: globalInset = 0, insetTop = globalInset, insetRight = globalInset, insetBottom = globalInset, insetLeft = globalInset } = {}, dimensions) {
     if (projection == null)
         return;
@@ -31,7 +36,7 @@ export function Projection({ projection, inset: globalInset = 0, insetTop = glob
     }
     // For named projections, retrieve the corresponding projection initializer.
     if (typeof projection !== "function")
-        projection = namedProjection(projection);
+        ({ type: projection } = namedProjection(projection));
     // Compute the frame dimensions and invoke the projection initializer.
     const { width, height, marginLeft, marginRight, marginTop, marginBottom } = dimensions;
     const dx = width - marginLeft - marginRight - insetLeft - insetRight;
@@ -72,19 +77,6 @@ export function Projection({ projection, inset: globalInset = 0, insetTop = glob
             });
     return { stream: (s) => projection.stream(transform.stream(clip(s))) };
 }
-export function hasProjection({ projection } = {}) {
-    if (projection == null)
-        return false;
-    if (typeof projection.stream === "function")
-        return true; // d3 projection
-    if (isObject(projection))
-        ({ type: projection } = projection);
-    if (typeof projection !== "function")
-        projection = namedProjection(projection);
-    return projection != null;
-}
-const pi = Math.PI;
-const tau = 2 * pi;
 function namedProjection(projection) {
     switch (`${projection}`.toLowerCase()) {
         case "albers-usa":
@@ -108,9 +100,9 @@ function namedProjection(projection) {
         case "gnomonic":
             return scaleProjection(geoGnomonic, 3.4641, 3.4641);
         case "identity":
-            return identity;
+            return { type: identity };
         case "reflect-y":
-            return reflectY;
+            return { type: reflectY };
         case "mercator":
             return scaleProjection(geoMercator, tau, tau);
         case "orthographic":
@@ -136,17 +128,37 @@ function maybePostClip(clip, x1, y1, x2, y2) {
     }
 }
 function scaleProjection(createProjection, kx, ky) {
-    return ({ width, height, rotate, precision = 0.15, clip }) => {
-        const projection = createProjection();
-        if (precision != null)
-            projection.precision?.(precision);
-        if (rotate != null)
-            projection.rotate?.(rotate);
-        if (typeof clip === "number")
-            projection.clipAngle?.(clip);
-        projection.scale(Math.min(width / kx, height / ky));
-        projection.translate([width / 2, height / 2]);
-        return projection;
+    return {
+        type: ({ width, height, rotate, precision = 0.15, clip }) => {
+            const projection = createProjection();
+            if (precision != null)
+                projection.precision?.(precision);
+            if (rotate != null)
+                projection.rotate?.(rotate);
+            if (typeof clip === "number")
+                projection.clipAngle?.(clip);
+            projection.scale(Math.min(width / kx, height / ky));
+            projection.translate([width / 2, height / 2]);
+            return projection;
+        },
+        aspectRatio: ky / kx
+    };
+}
+function conicProjection(createProjection, kx, ky) {
+    const { type, aspectRatio } = scaleProjection(createProjection, kx, ky);
+    return {
+        type: (options) => {
+            const { parallels, domain, width, height } = options;
+            const projection = type(options);
+            if (parallels != null) {
+                projection.parallels(parallels);
+                if (domain === undefined) {
+                    projection.fitSize([width, height], { type: "Sphere" });
+                }
+            }
+            return projection;
+        },
+        aspectRatio
     };
 }
 const identity = constant({ stream: (stream) => stream });
@@ -155,25 +167,27 @@ const reflectY = constant(geoTransform({
         this.stream.point(x, -y);
     }
 }));
-function conicProjection(createProjection, kx, ky) {
-    createProjection = scaleProjection(createProjection, kx, ky);
-    return (options) => {
-        const { parallels, domain, width, height } = options;
-        const projection = createProjection(options);
-        if (parallels != null) {
-            projection.parallels(parallels);
-            if (domain === undefined) {
-                projection.fitSize([width, height], { type: "Sphere" });
-            }
-        }
-        return projection;
-    };
+// Applies a point-wise projection to the given paired x and y channels.
+// Note: mutates values!
+export function maybeProject(cx, cy, channels, values, context) {
+    const x = channels[cx] && channels[cx].scale === "x";
+    const y = channels[cy] && channels[cy].scale === "y";
+    if (x && y) {
+        project(cx, cy, values, context.projection);
+    }
+    else if (x) {
+        throw new Error(`projection requires paired x and y channels; ${cx} is missing ${cy}`);
+    }
+    else if (y) {
+        throw new Error(`projection requires paired x and y channels; ${cy} is missing ${cx}`);
+    }
 }
-export function applyProjection(values, projection) {
-    const { x, y } = values;
+function project(cx, cy, values, projection) {
+    const x = values[cx];
+    const y = values[cy];
     const n = x.length;
-    const X = (values.x = new Float64Array(n).fill(NaN));
-    const Y = (values.y = new Float64Array(n).fill(NaN));
+    const X = (values[cx] = new Float64Array(n).fill(NaN));
+    const Y = (values[cy] = new Float64Array(n).fill(NaN));
     let i;
     const stream = projection.stream({
         point(x, y) {
@@ -184,4 +198,37 @@ export function applyProjection(values, projection) {
     for (i = 0; i < n; ++i) {
         stream.point(x[i], y[i]);
     }
+}
+// When a named projection is specified, we can use its natural aspect ratio to
+// determine a good value for the projection’s height based on the desired
+// width. When we don’t have a way to know, the golden ratio is our best guess.
+// Due to a circular dependency (we need to know the height before we can
+// construct the projection), we have to test the raw projection option rather
+// than the materialized projection; therefore we must be extremely careful that
+// the logic of this function exactly matches Projection above!
+export function projectionAspectRatio(projection, geometry) {
+    if (typeof projection?.stream === "function")
+        return defaultAspectRatio;
+    if (isObject(projection))
+        projection = projection.type;
+    if (projection == null)
+        return geometry ? defaultAspectRatio : undefined;
+    if (typeof projection !== "function") {
+        const { aspectRatio } = namedProjection(projection);
+        if (aspectRatio)
+            return aspectRatio;
+    }
+    return defaultAspectRatio;
+}
+// Extract the (possibly) scaled values for the x and y channels, and apply the
+// projection if any.
+export function Position(channels, scales, context) {
+    const position = valueObject({ ...(channels.x && { x: channels.x }), ...(channels.y && { y: channels.y }) }, scales);
+    if (context.projection)
+        maybeProject("x", "y", channels, position, context);
+    if (position.x)
+        position.x = coerceNumbers(position.x);
+    if (position.y)
+        position.y = coerceNumbers(position.y);
+    return position;
 }

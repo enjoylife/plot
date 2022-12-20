@@ -92,12 +92,13 @@ sort, reverse, ...outputs // output channel definitions
     // only apply to this transform rather than passing them through to the next.
     const { x, y, z, fill, stroke, x1, x2, // consumed if x is an output
     y1, y2, // consumed if y is an output
-    domain, cumulative, thresholds, interval, ...options } = inputs;
+    picker, domain, cumulative, thresholds, interval, ...options } = inputs;
     const [GZ, setGZ] = maybeColumn(z);
     const [vfill] = maybeColorChannel(fill);
     const [vstroke] = maybeColorChannel(stroke);
     const [GF, setGF] = maybeColumn(vfill);
     const [GS, setGS] = maybeColumn(vstroke);
+    const [, setJ] = maybeColumn(picker);
     return {
         ...("z" in inputs && { z: GZ || z }),
         ...("fill" in inputs && { fill: GF || fill }),
@@ -168,6 +169,7 @@ sort, reverse, ...outputs // output channel definitions
                 }
                 groupFacets.push(groupFacet);
             }
+            setJ && setJ(groupData);
             maybeSort(groupFacets, sort, reverse);
             return { data: groupData, facets: groupFacets };
         }),

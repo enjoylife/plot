@@ -31,6 +31,7 @@ export const boolean = (x) => (x == null ? x : !!x);
 export const first = (x) => (x ? x[0] : undefined);
 export const second = (x) => (x ? x[1] : undefined);
 export const constant = (x) => () => x;
+export const each = (x) => x;
 
 // Converts a string like “p25” into a function that takes an index I and an
 // accessor function f, returning the corresponding percentile value.
@@ -414,4 +415,8 @@ export function Named(things) {
 
 export function maybeNamed(things) {
   return isIterable(things) ? Named(things) : things;
+}
+
+export function maybePickerCursor(picker) {
+  return picker != null && picker.value && picker.value !== each ? "pointer" : null;
 }

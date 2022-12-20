@@ -3,6 +3,7 @@ import { finite, positive } from "../defined.js";
 import { identity, maybeNamed, number, valueof } from "../options.js";
 import { coerceNumbers } from "../scales.js";
 import { initializer } from "./basic.js";
+import { Position } from "../projection.js";
 const anchorXLeft = ({ marginLeft }) => [1, marginLeft];
 const anchorXRight = ({ width, marginRight }) => [-1, width - marginRight];
 const anchorXMiddle = ({ width, marginLeft, marginRight }) => [0, (marginLeft + width - marginRight) / 2];
@@ -78,10 +79,11 @@ function dodge(y, x, anchor, padding, options) {
         if (sort === undefined && reverse === undefined)
             options.sort = { channel: "r", order: "descending" };
     }
-    return initializer(options, function (data, facets, { [x]: X, r: R }, scales, dimensions) {
-        if (!X)
+    return initializer(options, function (data, facets, channels, scales, dimensions, context) {
+        let { [x]: X, r: R } = channels;
+        if (!channels[x])
             throw new Error(`missing channel: ${x}`);
-        X = coerceNumbers(valueof(X.value, scales[X.scale] || identity));
+        ({ [x]: X } = Position(channels, scales, context));
         const r = R ? undefined : this.r !== undefined ? this.r : options.r !== undefined ? number(options.r) : 3;
         if (R)
             R = coerceNumbers(valueof(R.value, scales[R.scale] || identity));

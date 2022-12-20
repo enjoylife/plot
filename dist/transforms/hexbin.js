@@ -1,9 +1,8 @@
-import { valueObject } from "../channel.js";
-import { coerceNumbers } from "../scales.js";
 import { sqrt3 } from "../symbols.js";
 import { isNoneish, number, valueof } from "../options.js";
 import { initializer } from "./basic.js";
 import { hasOutput, maybeGroup, maybeOutputs, maybeSubgroup } from "./group.js";
+import { Position } from "../projection.js";
 // We don’t want the hexagons to align with the edges of the plot frame, as that
 // would cause extreme x-values (the upper bound of the default x-scale domain)
 // to be rounded up into a floating bin to the right of the plot. Therefore,
@@ -54,17 +53,14 @@ export function hexbin(outputs = { fill: "count" }, { binWidth, ...options } = {
         options.symbol = "hexagon";
     if (options.r === undefined && !hasOutput(outputs, "r"))
         options.r = binWidth / 2;
-    return initializer(options, (data, facets, { x: X, y: Y, z: Z, fill: F, stroke: S, symbol: Q }, scales, _, context) => {
+    return initializer(options, (data, facets, channels, scales, _, context) => {
+        let { x: X, y: Y, z: Z, fill: F, stroke: S, symbol: Q } = channels;
         if (X === undefined)
             throw new Error("missing channel: x");
         if (Y === undefined)
             throw new Error("missing channel: y");
-        // Extract the scaled (or projected!) values for the x and y channels.
-        ({ x: X, y: Y } = valueObject({ x: X, y: Y }, scales, context));
-        // Coerce the x and y channels to numbers (so that null is properly
-        // treated as an undefined value rather than being coerced to zero).
-        X = coerceNumbers(X);
-        Y = coerceNumbers(Y);
+        // Get the (either scaled or projected) xy channels.
+        ({ x: X, y: Y } = Position(channels, scales, context));
         // Extract the values for channels that are eligible for grouping; not all
         // marks define a z channel, so compute one if it not already computed. If z
         // was explicitly set to null, ensure that we don’t subdivide bins.
@@ -110,7 +106,7 @@ export function hexbin(outputs = { fill: "count" }, { binWidth, ...options } = {
             binFacets.push(binFacet);
         }
         // Construct the output channels, and populate the radius scale hint.
-        const channels = {
+        const binChannels = {
             x: { value: BX },
             y: { value: BY },
             ...(Z && { z: { value: GZ } }),
@@ -122,7 +118,7 @@ export function hexbin(outputs = { fill: "count" }, { binWidth, ...options } = {
                 { scale: true, radius: name === "r" ? binWidth / 2 : undefined, value: output.transform() }
             ]))
         };
-        return { data, facets: binFacets, channels };
+        return { data, facets: binFacets, channels: binChannels };
     });
 }
 function hbin(I, X, Y, dx) {

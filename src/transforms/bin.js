@@ -119,6 +119,7 @@ function binn(
     x2, // consumed if x is an output
     y1,
     y2, // consumed if y is an output
+    picker,
     domain,
     cumulative,
     thresholds,
@@ -130,7 +131,7 @@ function binn(
   const [vstroke] = maybeColorChannel(stroke);
   const [GF, setGF] = maybeColumn(vfill);
   const [GS, setGS] = maybeColumn(vstroke);
-
+  const [, setJ] = maybeColumn(picker);
   return {
     ...("z" in inputs && {z: GZ || z}),
     ...("fill" in inputs && {fill: GF || fill}),
@@ -186,6 +187,7 @@ function binn(
         }
         groupFacets.push(groupFacet);
       }
+      setJ && setJ(groupData);
       maybeSort(groupFacets, sort, reverse);
       return {data: groupData, facets: groupFacets};
     }),
